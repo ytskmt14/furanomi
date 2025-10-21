@@ -2,11 +2,8 @@ import { Pool, PoolConfig } from 'pg';
 
 // データベース接続設定
 const dbConfig: PoolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'furanomi',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
+  // Railwayの場合は接続文字列を使用
+  connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: 20, // 最大接続数
   idleTimeoutMillis: 30000, // アイドルタイムアウト
