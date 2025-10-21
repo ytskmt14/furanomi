@@ -68,7 +68,7 @@ export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
                   const japaneseDayNames = ['日', '月', '火', '水', '木', '金', '土'];
                   
                   return dayNames.map((day, index) => {
-                    const hours = shop.business_hours?.[day];
+                    const hours = shop.business_hours?.[day as keyof typeof shop.business_hours];
                     const displayDay = japaneseDayNames[index];
                     
                     return (

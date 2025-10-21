@@ -33,7 +33,7 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
         // 一度だけ初期化
         if (!isGoogleMapsInitialized) {
           setOptions({
-            apiKey,
+            apiKey: apiKey,
             version: 'weekly',
           });
           isGoogleMapsInitialized = true;

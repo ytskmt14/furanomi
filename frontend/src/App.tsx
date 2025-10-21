@@ -72,7 +72,7 @@ const UserApp: React.FC = () => {
             lng: position.coords.longitude
           });
         },
-        (error) => {
+        (_error) => {
           reject(new Error('位置情報の取得に失敗しました'));
         },
         {
