@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -82,7 +82,7 @@ export const ShopsManagement: React.FC = () => {
         apiService.getShops(),
         apiService.getShopManagers()
       ]);
-      setShops(shopsData);
+      setShops(shopsData.shops);
       setShopManagers(managersData);
     } catch (err) {
       console.error('Failed to fetch data:', err);

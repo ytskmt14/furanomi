@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Badge } from '../ui/badge';
 import { getAvailabilityText, getAvailabilityColor } from '../../utils/helpers';
 import { apiService } from '../../services/api';
 
@@ -18,7 +17,7 @@ export const StaffAvailabilityUpdate: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shopName, setShopName] = useState('');
-  const [shop, setShop] = useState<any>(null);
+  const [_shop, setShop] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   // 店舗情報を取得

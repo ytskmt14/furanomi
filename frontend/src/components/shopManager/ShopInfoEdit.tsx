@@ -31,7 +31,15 @@ export const ShopInfoEdit: React.FC = () => {
     phone: '',
     email: '',
     category: 'izakaya',
-    business_hours: {},
+    business_hours: {
+      monday: { open: '', close: '' },
+      tuesday: { open: '', close: '' },
+      wednesday: { open: '', close: '' },
+      thursday: { open: '', close: '' },
+      friday: { open: '', close: '' },
+      saturday: { open: '', close: '' },
+      sunday: { open: '', close: '' }
+    },
     image_url: '',
   });
 
@@ -94,7 +102,7 @@ export const ShopInfoEdit: React.FC = () => {
       business_hours: {
         ...prev.business_hours,
         [day]: {
-          ...prev.business_hours[day],
+          ...prev.business_hours[day as keyof typeof prev.business_hours],
           [field]: value,
         },
       },
@@ -313,7 +321,7 @@ export const ShopInfoEdit: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
-                const hours = formData.business_hours[day] || { open: '', close: '' };
+                const hours = formData.business_hours[day as keyof typeof formData.business_hours] || { open: '', close: '' };
                 return (
                   <div key={day} className="flex items-center space-x-4">
                     <div className="w-20 text-sm font-medium text-gray-700">

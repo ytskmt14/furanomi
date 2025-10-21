@@ -11,7 +11,7 @@ export const SystemAdminLayout: React.FC<SystemAdminLayoutProps> = ({ children }
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [_isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   const isActive = (path: string) => {
