@@ -106,7 +106,7 @@ class ApiService {
     lat?: number;
     lng?: number;
     radius?: number;
-  }): Promise<any[]> {
+  }): Promise<{ shops: any[]; total: number; message: string }> {
     const searchParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -119,7 +119,7 @@ class ApiService {
     const queryString = searchParams.toString();
     const endpoint = queryString ? `/shops?${queryString}` : '/shops';
     
-    return this.request<any[]>(endpoint);
+    return this.request<{ shops: any[]; total: number; message: string }>(endpoint);
   }
 
   // 位置情報ベース店舗検索
@@ -127,7 +127,7 @@ class ApiService {
     category?: string;
     status?: string;
     radius?: number; // km単位
-  }): Promise<any[]> {
+  }): Promise<{ shops: any[]; total: number; message: string }> {
     return this.getShops({
       lat,
       lng,

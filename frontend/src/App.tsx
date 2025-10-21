@@ -96,16 +96,16 @@ const UserApp: React.FC = () => {
         setUserLocation(location);
         
         // 位置情報ベースで店舗を検索
-        const shopsData = await apiService.searchShopsByLocation(location.lat, location.lng);
-        setShops(shopsData);
-        setFilteredShops(shopsData);
+        const response = await apiService.searchShopsByLocation(location.lat, location.lng);
+        setShops(response.shops);
+        setFilteredShops(response.shops);
       } catch (locationError) {
         console.warn('位置情報の取得に失敗、全店舗を表示:', locationError);
         
         // 位置情報が取得できない場合は全店舗を表示
-        const shopsData = await apiService.getShops();
-        setShops(shopsData);
-        setFilteredShops(shopsData);
+        const response = await apiService.getShops();
+        setShops(response.shops);
+        setFilteredShops(response.shops);
       }
     } catch (err) {
       console.error('店舗データの読み込みに失敗:', err);

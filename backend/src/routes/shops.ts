@@ -219,7 +219,20 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     return a.name.localeCompare(b.name);
   });
   
-  res.json(sortedShops);
+  // レスポンス形式を統一
+  if (sortedShops.length === 0) {
+    res.json({
+      shops: [],
+      total: 0,
+      message: "No shops found within the specified radius"
+    });
+  } else {
+    res.json({
+      shops: sortedShops,
+      total: sortedShops.length,
+      message: "Shops retrieved successfully"
+    });
+  }
 }));
 
 // 店舗管理者の自分の店舗情報取得
