@@ -9,6 +9,9 @@ interface MapViewProps {
   onShopSelect: (shop: Shop) => void;
 }
 
+// グローバル変数で初期化状態を管理
+let isGoogleMapsInitialized = false;
+
 export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSelect }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -20,22 +23,33 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
     const initMap = async () => {
       try {
         const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        console.log('Google Maps API Key:', apiKey ? '設定済み' : '未設定');
         if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
           setError('Google Maps API キーが設定されていません');
           return;
         }
 
-        // 新しいAPIを使用してGoogle Mapsを初期化
-        setOptions({
-          apiKey,
-          version: 'weekly',
-        });
+        // 一度だけ初期化
+        if (!isGoogleMapsInitialized) {
+          setOptions({
+            apiKey,
+            version: 'weekly',
+          });
+          isGoogleMapsInitialized = true;
+        }
 
         const { Map } = await importLibrary('maps');
         const { Marker } = await importLibrary('marker');
 
         if (mapRef.current) {
-          const defaultCenter = userLocation || { lat: 35.6581, lng: 139.7016 }; // 渋谷をデフォルト
+          // 位置情報の検証
+          const defaultCenter = userLocation && 
+            typeof userLocation.lat === 'number' && 
+            typeof userLocation.lng === 'number' && 
+            !isNaN(userLocation.lat) && 
+            !isNaN(userLocation.lng)
+            ? userLocation 
+            : { lat: 33.6667, lng: 130.4167 }; // 福岡県福岡市東区香椎をデフォルト
 
           mapInstanceRef.current = new Map(mapRef.current, {
             center: defaultCenter,
@@ -54,7 +68,11 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
           });
 
           // 現在地マーカーを追加
-          if (userLocation) {
+          if (userLocation && 
+              typeof userLocation.lat === 'number' && 
+              typeof userLocation.lng === 'number' && 
+              !isNaN(userLocation.lat) && 
+              !isNaN(userLocation.lng)) {
             new Marker({
               position: userLocation,
               map: mapInstanceRef.current,
@@ -91,26 +109,32 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
 
     // 新しいマーカーを追加
     shops.forEach(shop => {
-      const marker = new google.maps.Marker({
-        position: { lat: shop.latitude, lng: shop.longitude },
-        map: mapInstanceRef.current,
-        title: shop.name,
-        icon: {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="16" cy="16" r="12" fill="${getAvailabilityColorValue(shop.availability_status)}" stroke="white" stroke-width="2"/>
-              <text x="16" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${shop.name.charAt(0)}</text>
-            </svg>
-          `),
-          scaledSize: new google.maps.Size(32, 32),
-        },
-      });
+      // 店舗の位置情報を検証
+      if (typeof shop.latitude === 'number' && 
+          typeof shop.longitude === 'number' && 
+          !isNaN(shop.latitude) && 
+          !isNaN(shop.longitude)) {
+        const marker = new google.maps.Marker({
+          position: { lat: shop.latitude, lng: shop.longitude },
+          map: mapInstanceRef.current,
+          title: shop.name,
+          icon: {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="12" fill="${getAvailabilityColorValue(shop.availability_status)}" stroke="white" stroke-width="2"/>
+                <text x="16" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${shop.name.charAt(0)}</text>
+              </svg>
+            `),
+            scaledSize: new google.maps.Size(32, 32),
+          },
+        });
 
-      marker.addListener('click', () => {
-        onShopSelect(shop);
-      });
+        marker.addListener('click', () => {
+          onShopSelect(shop);
+        });
 
-      markersRef.current.push(marker);
+        markersRef.current.push(marker);
+      }
     });
   }, [shops, isLoaded, onShopSelect]);
 
