@@ -24,6 +24,7 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
       try {
         const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
         console.log('Google Maps API Key:', apiKey ? '設定済み' : '未設定');
+        
         if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
           setError('Google Maps API キーが設定されていません');
           return;
