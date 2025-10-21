@@ -2,10 +2,11 @@
 
 -- システム管理者（本番用の強固なパスワード）
 -- パスワード: admin123!@# （本番環境では初回ログイン後に変更を推奨）
-INSERT INTO system_admins (id, login_id, password_hash, first_name, last_name)
+INSERT INTO system_admins (id, username, email, password_hash, first_name, last_name)
 VALUES (
   gen_random_uuid(),
   'admin',
+  'admin@furanomi.com',
   '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J8Kz8Kz8K', -- admin123!@# のハッシュ
   'システム',
   '管理者'
