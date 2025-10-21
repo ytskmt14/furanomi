@@ -162,7 +162,11 @@ const UserApp: React.FC = () => {
             {viewMode === 'list' ? (
               <ShopList shops={filteredShops} onShopSelect={handleShopSelect} />
             ) : (
-              <MapView shops={filteredShops} onShopSelect={handleShopSelect} />
+              <MapView 
+                shops={filteredShops} 
+                userLocation={userLocation}
+                onShopSelect={handleShopSelect} 
+              />
             )}
           </>
         )}

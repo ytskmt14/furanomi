@@ -1,63 +1,158 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Loader } from '@googlemaps/js-api-loader';
 import { Shop } from '../types/shop';
-import { Card, CardContent } from './ui/card';
+import { getAvailabilityColorValue } from '../utils/helpers';
 
 interface MapViewProps {
   shops: Shop[];
+  userLocation: { lat: number; lng: number } | null;
   onShopSelect: (shop: Shop) => void;
-  center?: { lat: number; lng: number };
 }
 
-export const MapView: React.FC<MapViewProps> = ({ center }) => {
+export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSelect }) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const initMap = async () => {
       try {
-        // 一時的に地図機能を無効化
-        console.log('Map initialization disabled for now');
-        
-        // プレースホルダーとして地図エリアを表示
-        if (mapRef.current) {
-          mapRef.current.innerHTML = `
-            <div style="
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 100%;
-              background-color: #f8f9fa;
-              border: 2px dashed #dee2e6;
-              border-radius: 8px;
-              color: #6c757d;
-              font-size: 1.2rem;
-              text-align: center;
-            ">
-              <div>
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🗺️</div>
-                <div>地図機能は準備中です</div>
-                <div style="font-size: 0.9rem; margin-top: 0.5rem;">
-                  Google Maps APIキーを設定してください
-                </div>
-              </div>
-            </div>
-          `;
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
+          setError('Google Maps API キーが設定されていません');
+          return;
         }
-      } catch (error) {
-        console.error('Error loading Google Maps:', error);
+
+        const loader = new Loader({
+          apiKey,
+          version: 'weekly',
+          libraries: ['places'],
+        });
+
+        await loader.load();
+
+        if (mapRef.current) {
+          const defaultCenter = userLocation || { lat: 35.6581, lng: 139.7016 }; // 渋谷をデフォルト
+
+          mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+            center: defaultCenter,
+            zoom: 15,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+            zoomControl: true,
+            styles: [
+              {
+                featureType: 'poi',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }],
+              },
+            ],
+          });
+
+          // 現在地マーカーを追加
+          if (userLocation) {
+            new google.maps.Marker({
+              position: userLocation,
+              map: mapInstanceRef.current,
+              title: '現在地',
+              icon: {
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="8" fill="#4285F4" stroke="white" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="3" fill="white"/>
+                  </svg>
+                `),
+                scaledSize: new google.maps.Size(24, 24),
+              },
+            });
+          }
+
+          setIsLoaded(true);
+        }
+      } catch (err) {
+        console.error('Google Maps の初期化に失敗しました:', err);
+        setError('地図の読み込みに失敗しました');
       }
     };
 
     initMap();
-  }, [center]);
+  }, [userLocation]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isLoaded) return;
+
+    // 既存のマーカーをクリア
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+
+    // 新しいマーカーを追加
+    shops.forEach(shop => {
+      const marker = new google.maps.Marker({
+        position: { lat: shop.latitude, lng: shop.longitude },
+        map: mapInstanceRef.current,
+        title: shop.name,
+        icon: {
+          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="16" cy="16" r="12" fill="${getAvailabilityColorValue(shop.availability_status)}" stroke="white" stroke-width="2"/>
+              <text x="16" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${shop.name.charAt(0)}</text>
+            </svg>
+          `),
+          scaledSize: new google.maps.Size(32, 32),
+        },
+      });
+
+      marker.addListener('click', () => {
+        onShopSelect(shop);
+      });
+
+      markersRef.current.push(marker);
+    });
+  }, [shops, isLoaded, onShopSelect]);
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-900">地図で確認</h2>
+        <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+          <div className="text-center">
+            <p className="text-gray-600 mb-2">{error}</p>
+            <p className="text-sm text-gray-500">
+              Google Maps API キーを設定してください
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="w-3 h-3 rounded-full bg-green-500"></span>
+            <span>空きあり</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+            <span>混雑</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="w-3 h-3 rounded-full bg-red-500"></span>
+            <span>満席</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="w-3 h-3 rounded-full bg-gray-500"></span>
+            <span>営業時間外</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">地図で確認</h2>
-      <Card>
-        <CardContent className="p-0">
-          <div ref={mapRef} className="w-full h-[500px] rounded-lg overflow-hidden" />
-        </CardContent>
-      </Card>
+      <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg">
+        <div ref={mapRef} className="w-full h-full" />
+      </div>
       <div className="flex justify-center gap-4 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <span className="w-3 h-3 rounded-full bg-green-500"></span>
