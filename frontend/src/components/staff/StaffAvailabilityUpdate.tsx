@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { getAvailabilityText, getAvailabilityColor } from '../../utils/helpers';
 import { apiService } from '../../services/api';
 
 export const StaffAvailabilityUpdate: React.FC = () => {

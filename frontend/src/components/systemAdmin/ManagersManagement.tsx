@@ -92,7 +92,8 @@ export const ManagersManagement: React.FC = () => {
         // 編集時はパスワードが空の場合は除外
         const updateData = { ...formData };
         if (!updateData.password) {
-          delete updateData.password;
+          const { password, ...dataWithoutPassword } = updateData;
+          Object.assign(updateData, dataWithoutPassword);
         }
         await apiService.updateShopManager(editingManager.id, updateData);
       } else {
