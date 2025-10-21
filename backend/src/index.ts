@@ -18,7 +18,12 @@ const PORT = process.env.PORT || 3001;
 
 // ミドルウェアの設定
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    'https://furanomi.com',
+    /^https:\/\/.*\.vercel\.app$/,
+    'https://furanomi-frontend-134j7vnpc-ytskmt14s-projects.vercel.app'
+  ],
   credentials: true
 }));
 app.use(cookieParser());
