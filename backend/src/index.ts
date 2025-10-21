@@ -21,6 +21,7 @@ app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'https://furanomi.com',
+    'https://www.furanomi.com',
     /^https:\/\/.*\.vercel\.app$/,
     'https://furanomi-frontend-134j7vnpc-ytskmt14s-projects.vercel.app'
   ],
