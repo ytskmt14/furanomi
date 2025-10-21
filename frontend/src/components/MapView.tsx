@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { Shop } from '../types/shop';
 import { getAvailabilityColorValue } from '../utils/helpers';
 
@@ -25,18 +25,19 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
           return;
         }
 
-        const loader = new Loader({
+        // 新しいAPIを使用してGoogle Mapsを初期化
+        setOptions({
           apiKey,
           version: 'weekly',
-          libraries: ['places'],
         });
 
-        await loader.load();
+        const { Map } = await importLibrary('maps');
+        const { Marker } = await importLibrary('marker');
 
         if (mapRef.current) {
           const defaultCenter = userLocation || { lat: 35.6581, lng: 139.7016 }; // 渋谷をデフォルト
 
-          mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+          mapInstanceRef.current = new Map(mapRef.current, {
             center: defaultCenter,
             zoom: 15,
             mapTypeControl: false,
@@ -54,7 +55,7 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
 
           // 現在地マーカーを追加
           if (userLocation) {
-            new google.maps.Marker({
+            new Marker({
               position: userLocation,
               map: mapInstanceRef.current,
               title: '現在地',
