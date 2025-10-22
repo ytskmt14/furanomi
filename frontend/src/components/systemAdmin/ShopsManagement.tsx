@@ -138,7 +138,7 @@ export const ShopsManagement: React.FC = () => {
     setEditingShop(shop);
     setFormData({
       name: shop.name,
-      description: shop.description,
+      description: shop.description || '',
       address: shop.address,
       postalCode: shop.postal_code || '',
       formattedAddress: shop.formatted_address || '',
