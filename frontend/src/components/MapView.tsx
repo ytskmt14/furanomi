@@ -15,7 +15,7 @@ let isGoogleMapsInitialized = false;
 export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSelect }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+  const markersRef = useRef<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +23,6 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
     const initMap = async () => {
       try {
         const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-        console.log('Google Maps API Key:', apiKey ? '設定済み' : '未設定');
         
         if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
           setError('Google Maps API キーが設定されていません');
@@ -38,6 +37,9 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
 
         const { Map } = await importLibrary('maps');
         const { Marker } = await importLibrary('marker');
+        
+        // Markerクラスをグローバルに保存
+        (window as any).Marker = Marker;
 
         if (mapRef.current) {
           // 位置情報の検証
@@ -71,7 +73,12 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
               typeof userLocation.lng === 'number' && 
               !isNaN(userLocation.lat) && 
               !isNaN(userLocation.lng)) {
-            new Marker({
+            const MarkerClass = (window as any).Marker;
+            if (!MarkerClass) {
+              console.error('Marker class is not available for current location');
+              return;
+            }
+            new MarkerClass({
               position: userLocation,
               map: mapInstanceRef.current,
               title: '現在地',
@@ -101,8 +108,13 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
   useEffect(() => {
     if (!mapInstanceRef.current || !isLoaded) return;
 
+
     // 既存のマーカーをクリア
-    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current.forEach(marker => {
+      if (marker && typeof marker.setMap === 'function') {
+        marker.setMap(null);
+      }
+    });
     markersRef.current = [];
 
     // 新しいマーカーを追加
@@ -112,7 +124,12 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
           typeof shop.longitude === 'number' && 
           !isNaN(shop.latitude) && 
           !isNaN(shop.longitude)) {
-        const marker = new google.maps.Marker({
+        const MarkerClass = (window as any).Marker;
+        if (!MarkerClass) {
+          console.error('Marker class is not available');
+          return;
+        }
+        const marker = new MarkerClass({
           position: { lat: shop.latitude, lng: shop.longitude },
           map: mapInstanceRef.current,
           title: shop.name,
@@ -132,6 +149,7 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
         });
 
         markersRef.current.push(marker);
+      } else {
       }
     });
   }, [shops, isLoaded, onShopSelect]);

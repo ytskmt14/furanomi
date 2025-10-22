@@ -33,8 +33,8 @@ export const ManagersManagement: React.FC = () => {
     username: '',
     email: '',
     password: '',
-    first_name: '',
-    last_name: '',
+    firstName: '',
+    lastName: '',
     phone: '',
     is_active: true
   });
@@ -61,8 +61,8 @@ export const ManagersManagement: React.FC = () => {
       username: '',
       email: '',
       password: '',
-      first_name: '',
-      last_name: '',
+      firstName: '',
+      lastName: '',
       phone: '',
       is_active: true
     });
@@ -75,8 +75,8 @@ export const ManagersManagement: React.FC = () => {
       username: manager.username,
       email: manager.email,
       password: '', // 編集時はパスワードを空にする
-      first_name: manager.first_name,
-      last_name: manager.last_name,
+      firstName: manager.first_name,
+      lastName: manager.last_name,
       phone: manager.phone || '',
       is_active: manager.is_active
     });
@@ -319,21 +319,21 @@ export const ManagersManagement: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="first_name">名前 *</Label>
+                    <Label htmlFor="firstName">名前 *</Label>
                     <Input
-                      id="first_name"
-                      value={formData.first_name}
-                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                       required
                       className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="last_name">姓 *</Label>
+                    <Label htmlFor="lastName">姓 *</Label>
                     <Input
-                      id="last_name"
-                      value={formData.last_name}
-                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                       required
                       className="mt-1"
                     />

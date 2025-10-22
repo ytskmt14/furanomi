@@ -26,7 +26,6 @@ export const SystemAdminLogin: React.FC = () => {
 
     try {
       const response = await apiService.systemAdminLogin({ username, password });
-      console.log('Login successful:', response);
       
       // ログイン成功後、システム管理者ダッシュボードに遷移
       navigate('/system-admin/');

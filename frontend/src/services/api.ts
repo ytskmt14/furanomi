@@ -133,7 +133,7 @@ class ApiService {
       lng,
       category: options?.category,
       status: options?.status,
-      radius: options?.radius
+      radius: options?.radius || 10 // デフォルト10km
     });
   }
 
@@ -159,6 +159,14 @@ class ApiService {
   async createShop(data: any): Promise<any> {
     return this.request<any>('/shops', {
       method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // 店舗更新（システム管理者のみ）
+  async updateShopBySystemAdmin(id: string, data: any): Promise<any> {
+    return this.request<any>(`/shops/system/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(data),
     });
   }
@@ -280,6 +288,29 @@ class ApiService {
       console.error('Reverse geocoding failed:', error);
       return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     }
+  }
+
+  // ジオコーディング（住所から位置情報を取得）
+  async geocode(address: string): Promise<{ latitude: number; longitude: number; formatted_address: string; place_id: string }> {
+    return this.request<{ latitude: number; longitude: number; formatted_address: string; place_id: string }>('/system/geocode', {
+      method: 'POST',
+      body: JSON.stringify({ address }),
+    });
+  }
+
+  // 郵便番号から住所を検索
+  async searchPostalCode(postalCode: string): Promise<{
+    results: Array<{
+      postalCode: string;
+      prefecture: string;
+      city: string;
+      town: string;
+      prefectureKana: string;
+      cityKana: string;
+      townKana: string;
+    }>;
+  }> {
+    return this.request<any>(`/system/postal-code/${postalCode}`);
   }
 }
 

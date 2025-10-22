@@ -26,12 +26,10 @@ export const SystemAdminLayout: React.FC<SystemAdminLayoutProps> = ({ children }
       
       try {
         const response = await apiService.getCurrentUser();
-        console.log('User response:', response); // デバッグ用
         setUser(response.user);
         
         // システム管理者でない場合はログイン画面に遷移
         if (response.user.role !== 'system_admin') {
-          console.log('User is not system admin, redirecting to login');
           navigate('/system-admin/login');
           return;
         }

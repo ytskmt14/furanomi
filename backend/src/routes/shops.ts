@@ -38,8 +38,8 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const params: any[] = [];
   let paramCount = 1;
 
-  // 検索半径の決定（システム設定から取得、デフォルト1000m）
-  let searchRadius = 1000; // デフォルト1km
+  // 検索半径の決定（システム設定から取得、デフォルト5000m）
+  let searchRadius = 5000; // デフォルト5km
   if (radius) {
     searchRadius = parseFloat(radius as string) * 1000; // kmをmに変換
   } else {
@@ -169,8 +169,8 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       phone: row.phone,
       email: row.email,
       category: row.category,
-      latitude: row.latitude,
-      longitude: row.longitude,
+      latitude: parseFloat(row.latitude),
+      longitude: parseFloat(row.longitude),
       business_hours: row.business_hours,
       image_url: row.image_url,
       is_active: row.is_active,
@@ -190,7 +190,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     if (lat && lng) {
       const userLat = parseFloat(lat as string);
       const userLng = parseFloat(lng as string);
-      const distance = calculateDistance(userLat, userLng, row.latitude, row.longitude);
+      const distance = calculateDistance(userLat, userLng, parseFloat(row.latitude), parseFloat(row.longitude));
       return {
         ...shop,
         distance: Math.round(distance) // メートル単位で四捨五入
@@ -316,19 +316,76 @@ router.put('/:id', authenticateToken, requireShopManager, asyncHandler(async (re
 // 店舗作成（システム管理者のみ）
 router.post('/', authenticateToken, requireSystemAdmin, asyncHandler(async (req: Request, res: Response) => {
   const { 
-    name, description, address, phone, email, category, 
-    latitude, longitude, business_hours, image_url, shop_manager_id 
+    name, description, address, postalCode, formattedAddress, placeId,
+    phone, email, category, latitude, longitude, business_hours, image_url, shop_manager_id 
   } = req.body;
+
+  // バリデーション
+  if (!latitude || !longitude) {
+    return res.status(400).json({ error: '緯度経度が設定されていません。位置取得ボタンをクリックしてください。' });
+  }
+
+  // business_hoursをJSONに変換
+  const businessHoursJson = JSON.stringify(business_hours);
 
   const result = await db.query(`
     INSERT INTO shops (
-      name, description, address, phone, email, category,
-      latitude, longitude, business_hours, image_url, shop_manager_id
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      name, description, address, postal_code, formatted_address, place_id,
+      phone, email, category, latitude, longitude,
+      business_hours, image_url, shop_manager_id, geocoded_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP)
     RETURNING *
-  `, [name, description, address, phone, email, category, latitude, longitude, business_hours, image_url, shop_manager_id]);
+  `, [
+    name, description, address, postalCode, formattedAddress, placeId,
+    phone, email, category, latitude, longitude,
+    businessHoursJson, image_url, shop_manager_id
+  ]);
 
   res.status(201).json(result.rows[0]);
+}));
+
+// 店舗更新（システム管理者のみ）
+router.put('/system/:id', authenticateToken, requireSystemAdmin, asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { 
+    name, description, address, postalCode, formattedAddress, placeId,
+    phone, email, category, latitude, longitude, business_hours, image_url, shop_manager_id, is_active 
+  } = req.body;
+
+  // 店舗の存在確認
+  const shopCheck = await db.query('SELECT id FROM shops WHERE id = $1', [id]);
+  
+  if (shopCheck.rows.length === 0) {
+    return res.status(404).json({ error: '店舗が見つかりません' });
+  }
+
+  // バリデーション
+  if (!latitude || !longitude) {
+    return res.status(400).json({ error: '緯度経度が設定されていません。位置取得ボタンをクリックしてください。' });
+  }
+
+  // business_hoursをJSONに変換
+  const businessHoursJson = JSON.stringify(business_hours);
+
+  const result = await db.query(`
+    UPDATE shops SET 
+      name = $1, description = $2, address = $3, postal_code = $4,
+      formatted_address = $5, place_id = $6,
+      phone = $7, email = $8, category = $9,
+      latitude = $10, longitude = $11,
+      business_hours = $12, image_url = $13,
+      shop_manager_id = $14, is_active = $15,
+      geocoded_at = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $16
+    RETURNING *
+  `, [
+    name, description, address, postalCode, formattedAddress, placeId,
+    phone, email, category, latitude, longitude,
+    businessHoursJson, image_url, shop_manager_id, is_active, id
+  ]);
+
+  res.json(result.rows[0]);
 }));
 
 // 店舗削除（システム管理者のみ）

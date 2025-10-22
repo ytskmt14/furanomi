@@ -4,6 +4,9 @@ export interface Shop {
   name: string;
   description?: string;
   address: string;
+  postal_code?: string;          // 追加
+  formatted_address?: string;     // 追加
+  place_id?: string;              // 追加
   phone?: string;
   email?: string;
   category: 'restaurant' | 'cafe' | 'izakaya';
@@ -24,6 +27,7 @@ export interface Shop {
   distance?: number; // 現在地からの距離（m）
   image_url?: string; // 店舗画像URL
   is_active: boolean;
+  geocoded_at?: string;           // 追加
   created_at: string;
   updated_at: string;
   shop_manager?: {
