@@ -6,36 +6,7 @@ import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { apiService } from '../../services/api';
 import { PostalCodeInput } from './PostalCodeInput';
-
-interface Shop {
-  id: string;
-  name: string;
-  description: string;
-  address: string;
-  phone?: string;
-  email?: string;
-  category: 'restaurant' | 'cafe' | 'izakaya';
-  latitude: number;
-  longitude: number;
-  business_hours?: {
-    monday?: { open: string; close: string; close_next_day?: boolean };
-    tuesday?: { open: string; close: string; close_next_day?: boolean };
-    wednesday?: { open: string; close: string; close_next_day?: boolean };
-    thursday?: { open: string; close: string; close_next_day?: boolean };
-    friday?: { open: string; close: string; close_next_day?: boolean };
-    saturday?: { open: string; close: string; close_next_day?: boolean };
-    sunday?: { open: string; close: string; close_next_day?: boolean };
-  };
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  shop_manager?: {
-    id: string;
-    username: string;
-    first_name: string;
-    last_name: string;
-  };
-}
+import { Shop } from '../../types/shop';
 
 interface ShopManager {
   id: string;
