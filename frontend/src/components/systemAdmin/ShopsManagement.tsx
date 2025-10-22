@@ -81,6 +81,14 @@ export const ShopsManagement: React.FC = () => {
       friday: { open: '09:00', close: '21:00' },
       saturday: { open: '09:00', close: '21:00' },
       sunday: { open: '09:00', close: '21:00' }
+    } as {
+      monday?: { open: string; close: string; close_next_day?: boolean };
+      tuesday?: { open: string; close: string; close_next_day?: boolean };
+      wednesday?: { open: string; close: string; close_next_day?: boolean };
+      thursday?: { open: string; close: string; close_next_day?: boolean };
+      friday?: { open: string; close: string; close_next_day?: boolean };
+      saturday?: { open: string; close: string; close_next_day?: boolean };
+      sunday?: { open: string; close: string; close_next_day?: boolean };
     }
   });
 
