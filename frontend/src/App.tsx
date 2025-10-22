@@ -189,7 +189,61 @@ const UserApp: React.FC = () => {
 };
 
 // メインアプリケーション
+// 環境変数のチェック
+const checkEnvironmentVariables = () => {
+  const requiredEnvVars = [
+    'VITE_GOOGLE_MAPS_API_KEY',
+    'VITE_API_BASE_URL'
+  ];
+  
+  const missingVars = requiredEnvVars.filter(varName => {
+    const value = import.meta.env[varName];
+    return !value || value.includes('YOUR_') || value.includes('localhost');
+  });
+  
+  if (missingVars.length > 0) {
+    console.error('Missing or invalid environment variables:', missingVars);
+    return false;
+  }
+  
+  return true;
+};
+
 function App() {
+  const [envCheckPassed, setEnvCheckPassed] = useState(true);
+  
+  useEffect(() => {
+    const envValid = checkEnvironmentVariables();
+    setEnvCheckPassed(envValid);
+  }, []);
+
+  if (!envCheckPassed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">環境設定エラー</h1>
+            <p className="text-gray-600 mb-4">
+              必要な環境変数が設定されていません。
+            </p>
+            <div className="text-left bg-gray-100 p-4 rounded-lg mb-4">
+              <p className="text-sm text-gray-700 mb-2">設定が必要な環境変数:</p>
+              <ul className="text-sm text-gray-600 list-disc list-inside">
+                <li>VITE_GOOGLE_MAPS_API_KEY</li>
+                <li>VITE_API_BASE_URL</li>
+              </ul>
+            </div>
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="w-full"
+            >
+              再読み込み
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <ErrorBoundary>
       <Router>
