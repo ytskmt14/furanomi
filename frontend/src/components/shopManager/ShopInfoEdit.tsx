@@ -83,16 +83,41 @@ export const ShopInfoEdit: React.FC = () => {
 
   const handleImageChange = (file: File | null) => {
     if (file) {
-      // ファイルをBase64に変換してプレビュー表示
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setFormData(prev => ({
-          ...prev,
-          image_url: result, // Base64データを一時的に保存
-        }));
+      // 画像を圧縮してからBase64エンコード
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // 最大サイズを設定（800x600）
+        const maxWidth = 800;
+        const maxHeight = 600;
+        let { width, height } = img;
+        
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 画像を描画
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // JPEG形式で圧縮（品質80%）
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setFormData(prev => ({ ...prev, image_url: compressedDataUrl }));
       };
-      reader.readAsDataURL(file);
+      
+      img.src = URL.createObjectURL(file);
     }
   };
 
