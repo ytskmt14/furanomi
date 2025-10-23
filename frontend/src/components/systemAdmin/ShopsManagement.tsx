@@ -238,7 +238,7 @@ export const ShopsManagement: React.FC = () => {
     handleGeocodeAddress(addressData.fullAddress);
   };
 
-  // 住所から位置情報を取得（フロントエンドで直接実行 - 開発環境用）
+  // 住所から位置情報を取得（バックエンド経由）
   const handleGeocodeAddress = async (addressOverride?: string) => {
     const targetAddress = addressOverride || formData.address;
     
@@ -249,35 +249,18 @@ export const ShopsManagement: React.FC = () => {
     setSuccess(null);
     
     try {
-      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      // バックエンド経由でGeocoding APIを呼び出し
+      const response = await apiService.geocode(targetAddress);
       
-      if (!apiKey) {
-        throw new Error('Google Maps API キーが設定されていません');
-      }
+      setFormData(prev => ({
+        ...prev,
+        latitude: response.latitude,
+        longitude: response.longitude,
+        formattedAddress: response.formatted_address,
+        placeId: response.place_id
+      }));
       
-      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(targetAddress)}&key=${apiKey}&language=ja`;
-      
-      const response = await fetch(url);
-      
-      const data = await response.json();
-      
-      if (data.status === 'OK' && data.results.length > 0) {
-        const result = data.results[0];
-        const location = result.geometry.location;
-        
-        setFormData(prev => ({
-          ...prev,
-          latitude: location.lat,
-          longitude: location.lng,
-          formattedAddress: result.formatted_address,
-          placeId: result.place_id
-        }));
-        
-        setSuccess(`正規化された住所: ${result.formatted_address}`);
-      } else {
-        console.error('Geocoding failed:', data.status, data.error_message);
-        throw new Error(data.status === 'ZERO_RESULTS' ? '該当する住所が見つかりません' : data.error_message || '位置情報の取得に失敗しました');
-      }
+      setSuccess(`正規化された住所: ${response.formatted_address}`);
     } catch (err: any) {
       console.error('Geocoding failed:', err);
       setError(err.message || '位置情報の取得に失敗しました');
