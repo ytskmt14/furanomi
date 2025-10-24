@@ -22,41 +22,46 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { category, status, lat, lng, radius } = req.query;
 
-  let query = `
-    SELECT 
-      s.id, s.name, s.description, s.address, s.phone, s.email, 
-      s.category, s.latitude, s.longitude, s.business_hours, 
-      s.image_url, s.is_active,
-      sa.status as availability_status, sa.updated_at as availability_updated_at
-    FROM shops s
-    LEFT JOIN shop_availability sa ON s.id = sa.shop_id
-    WHERE s.is_active = true
-  `;
-
   const params: any[] = [];
   let paramCount = 1;
+  let query: string;
 
-  // 位置情報が提供された場合は距離計算を追加
+  // 位置情報が提供された場合はWITH句で距離計算を1回のみ実行
   if (lat && lng) {
+    query = `
+      WITH shop_distances AS (
+        SELECT 
+          s.id, s.name, s.description, s.address, s.phone, s.email, 
+          s.category, s.latitude, s.longitude, s.business_hours, 
+          s.image_url, s.is_active,
+          sa.status as availability_status, 
+          sa.updated_at as availability_updated_at,
+          (
+            6371000 * acos(
+              cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
+              cos(radians(s.longitude) - radians($${paramCount + 1})) + 
+              sin(radians($${paramCount})) * sin(radians(s.latitude))
+            )
+          ) as distance
+        FROM shops s
+        LEFT JOIN shop_availability sa ON s.id = sa.shop_id
+        WHERE s.is_active = true
+      )
+      SELECT * FROM shop_distances
+    `;
+    params.push(parseFloat(lat as string), parseFloat(lng as string));
+    paramCount += 2;
+  } else {
     query = `
       SELECT 
         s.id, s.name, s.description, s.address, s.phone, s.email, 
         s.category, s.latitude, s.longitude, s.business_hours, 
         s.image_url, s.is_active,
-        sa.status as availability_status, sa.updated_at as availability_updated_at,
-        (
-          6371000 * acos(
-            cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
-            cos(radians(s.longitude) - radians($${paramCount + 1})) + 
-            sin(radians($${paramCount})) * sin(radians(s.latitude))
-          )
-        ) as distance
+        sa.status as availability_status, sa.updated_at as availability_updated_at
       FROM shops s
       LEFT JOIN shop_availability sa ON s.id = sa.shop_id
       WHERE s.is_active = true
     `;
-    params.push(parseFloat(lat as string), parseFloat(lng as string));
-    paramCount += 2;
   }
 
   // 検索半径の決定（システム設定から取得、デフォルト5000m）
@@ -87,46 +92,52 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
+  // フィルタ条件を追加
+  const whereConditions: string[] = [];
+  
   // カテゴリフィルタ
   if (category) {
-    query += ` AND s.category = $${paramCount}`;
+    if (lat && lng) {
+      whereConditions.push(`category = $${paramCount}`);
+    } else {
+      whereConditions.push(`s.category = $${paramCount}`);
+    }
     params.push(category);
     paramCount++;
   }
 
   // 空き状況フィルタ
   if (status) {
-    query += ` AND sa.status = $${paramCount}`;
+    if (lat && lng) {
+      whereConditions.push(`availability_status = $${paramCount}`);
+    } else {
+      whereConditions.push(`sa.status = $${paramCount}`);
+    }
     params.push(status);
     paramCount++;
   }
 
-  // 位置情報フィルタ（距離計算は既にSELECT句で実行済み）
+  // 位置情報フィルタ（距離は既にWITH句で計算済み）
   if (lat && lng) {
-    query += ` AND (
-      6371000 * acos(
-        cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
-        cos(radians(s.longitude) - radians($${paramCount + 1})) + 
-        sin(radians($${paramCount})) * sin(radians(s.latitude))
-      )
-    ) <= $${paramCount + 2}`;
-    params.push(parseFloat(lat as string), parseFloat(lng as string), searchRadius);
-    paramCount += 3;
+    whereConditions.push(`distance <= $${paramCount}`);
+    params.push(searchRadius);
+    paramCount++;
   }
 
-  // ソート（距離計算は既にSELECT句で実行済み）
+  // WHERE条件をクエリに追加
+  if (whereConditions.length > 0) {
+    if (lat && lng) {
+      query += ` WHERE ${whereConditions.join(' AND ')}`;
+    } else {
+      query += ` AND ${whereConditions.join(' AND ')}`;
+    }
+  }
+
+  // ソート（距離は既にWITH句で計算済み）
   if (lat && lng) {
     query += ` ORDER BY 
-      CASE WHEN sa.status = 'closed' THEN 1 ELSE 0 END ASC,
-      (
-        6371000 * acos(
-          cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
-          cos(radians(s.longitude) - radians($${paramCount + 1})) + 
-          sin(radians($${paramCount})) * sin(radians(s.latitude))
-        )
-      ) ASC`;
-    params.push(parseFloat(lat as string), parseFloat(lng as string));
-    paramCount += 2;
+      CASE WHEN availability_status = 'closed' THEN 1 ELSE 0 END ASC,
+      distance ASC`;
   } else {
     query += ` ORDER BY 
       CASE WHEN sa.status = 'closed' THEN 1 ELSE 0 END ASC,
@@ -213,7 +224,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     };
 
     // 位置情報が提供された場合はSQLで計算済みの距離を使用
-    if (lat && lng && row.distance) {
+    if (lat && lng && typeof row.distance === 'number') {
       return {
         ...shop,
         distance: Math.round(row.distance) // メートル単位で四捨五入

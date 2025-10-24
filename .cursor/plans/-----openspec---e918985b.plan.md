@@ -1,153 +1,124 @@
-<!-- e918985b-acee-4171-8e21-d779cf77c2e7 85a50446-842c-4073-87f8-9f89dc799b9d -->
-# バックエンドAPIレスポンス最適化（TASK-012）
+<!-- e918985b-acee-4171-8e21-d779cf77c2e7 8f60344e-f1c6-4007-b7ac-0e306f02f18b -->
+# Backend API Performance Optimization Plan
 
-## 📊 現状の問題
+## Current Performance
 
-**ネットワークタイミング分析結果:**
-- Waiting for server response: **4.85 秒** ← 最大のボトルネック
-- Content Download: 850 ms
-- Total: 約 **5.7 秒**
+- Response time: 5.3 seconds
+- Target: 1.5 seconds or less (70% reduction)
+- Environment: Railway Trial Plan (Singapore region, 512MB RAM, 2 shared vCPU)
 
-**問題の所在:**
-1. データベースクエリが遅い（複数JOIN + 位置情報計算）
-2. 全店舗に対してJavaScript側で営業時間判定を実行
-3. 全店舗に対して距離計算を2回実行（SQL + JavaScript）
-4. インデックスが不足している可能性
+## Root Cause Analysis
 
-## 🎯 最適化戦略
+### Critical Issue: Distance Calculation Executed 3 Times
 
-### フェーズ1: データベース最適化（即効性大）
+In `backend/src/routes/shops.ts`, the Haversine formula (heavy trigonometric calculations) is executed 3 times per shop:
 
-#### 1. インデックス追加
+1. **SELECT clause (lines 47-53)**: Calculate distance for result
+2. **WHERE clause (lines 106-112)**: Recalculate distance for filtering
+3. **ORDER BY clause (lines 121-127)**: Recalculate distance for sorting
 
-`backend/migrations/add_performance_indexes.sql`を作成:
+Each calculation includes: `cos()`, `sin()`, `acos()`, `radians()` - very CPU intensive.
+
+### Additional Issues
+
+- Parameters (lat, lng) are added 3 times to the array
+- Database indexes not yet applied (migration file created but not executed on Railway)
+- Shared CPU on Trial Plan amplifies the impact of redundant calculations
+
+## Implementation Strategy
+
+### Phase 1: Optimize Distance Calculation (High Priority)
+
+**File**: `backend/src/routes/shops.ts`
+
+Use PostgreSQL WITH clause (CTE) to calculate distance once and reference it:
 
 ```sql
--- 位置情報検索用のインデックス
-CREATE INDEX IF NOT EXISTS idx_shops_location ON shops(latitude, longitude);
-
--- JOIN最適化用のインデックス
-CREATE INDEX IF NOT EXISTS idx_shop_availability_shop_id ON shop_availability(shop_id);
-CREATE INDEX IF NOT EXISTS idx_shops_shop_manager_id ON shops(shop_manager_id);
-CREATE INDEX IF NOT EXISTS idx_shops_is_active ON shops(is_active) WHERE is_active = true;
-
--- 複合インデックス（カテゴリフィルタ用）
-CREATE INDEX IF NOT EXISTS idx_shops_category_active ON shops(category, is_active);
-```
-
-#### 2. クエリ最適化
-
-**問題点:**
-- 距離計算を2回実行（ORDER BY句とJavaScript側）
-- 営業時間判定をJavaScript側で全店舗に実行
-
-**改善案:**
-- `SELECT`句に距離計算を含める（1回だけ計算）
-- 不要なフィールドを削除（shop_manager情報は詳細時のみ必要）
-
-`backend/src/routes/shops.ts` の最適化:
-
-```typescript
-// 最適化されたクエリ
-let query = `
+WITH shop_distances AS (
   SELECT 
     s.id, s.name, s.description, s.address, s.phone, s.email, 
     s.category, s.latitude, s.longitude, s.business_hours, 
     s.image_url, s.is_active,
-    sa.status as availability_status, sa.updated_at as availability_updated_at
-    ${lat && lng ? `, (
+    sa.status as availability_status, 
+    sa.updated_at as availability_updated_at,
+    (
       6371000 * acos(
-        cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
-        cos(radians(s.longitude) - radians($${paramCount + 1})) + 
-        sin(radians($${paramCount})) * sin(radians(s.latitude))
+        cos(radians($1)) * cos(radians(s.latitude)) * 
+        cos(radians(s.longitude) - radians($2)) + 
+        sin(radians($1)) * sin(radians(s.latitude))
       )
-    ) as distance` : ''}
+    ) as distance
   FROM shops s
   LEFT JOIN shop_availability sa ON s.id = sa.shop_id
   WHERE s.is_active = true
-`;
+)
+SELECT * FROM shop_distances
+WHERE distance <= $3
+ORDER BY 
+  CASE WHEN availability_status = 'closed' THEN 1 ELSE 0 END ASC,
+  distance ASC
 ```
 
-### フェーズ2: キャッシュ戦略（即効性大）
+This reduces distance calculation from **3 times to 1 time per shop**.
 
-#### 簡易メモリキャッシュ実装
+### Phase 2: Apply Database Indexes (High Priority)
 
-`backend/src/utils/cache.ts`を作成:
+**File**: `backend/migrations/add_performance_indexes.sql` (already created)
 
-```typescript
-interface CacheItem<T> {
-  data: T;
-  expiresAt: number;
-}
+Execute the migration on Railway PostgreSQL to add:
 
-class SimpleCache {
-  private cache: Map<string, CacheItem<any>> = new Map();
+- Location index: `shops(latitude, longitude)`
+- JOIN optimization: `shop_availability(shop_id)`, `shops(shop_manager_id)`
+- Filter index: `shops(is_active)`, `shops(category, is_active)`
+- Settings index: `system_settings(key)`
 
-  set<T>(key: string, data: T, ttlSeconds: number): void {
-    this.cache.set(key, {
-      data,
-      expiresAt: Date.now() + ttlSeconds * 1000
-    });
-  }
+### Phase 3: Optimize Parameter Handling
 
-  get<T>(key: string): T | null {
-    const item = this.cache.get(key);
-    if (!item) return null;
-    
-    if (Date.now() > item.expiresAt) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    return item.data;
-  }
+Remove duplicate lat/lng parameters - use only once in the WITH clause.
 
-  clear(): void {
-    this.cache.clear();
-  }
-}
+### Phase 4: Frontend Optimization (Low Priority)
 
-export const cache = new SimpleCache();
-```
+**File**: `frontend/src/App.tsx`
 
-**キャッシュ戦略:**
-- システム設定（search_radius）: 5分キャッシュ
-- 店舗リスト（位置情報なし）: 30秒キャッシュ
-- 空き状況はキャッシュしない（リアルタイム性維持）
+Optional improvements:
 
-### フェーズ3: レスポンスデータ最適化
+- Reduce `enableHighAccuracy` timeout if needed
+- Optimize default search radius (currently 10km)
 
-#### 不要なフィールドの削除
+## Expected Performance Impact
 
-- `created_at`, `updated_at`: 詳細画面でのみ必要
-- `shop_manager`: 一覧では不要（詳細のみ）
+### After Phase 1 (Distance Calculation Optimization)
 
-### フェーズ4: ページネーション（将来対応）
+- **Current**: 5.3 seconds
+- **Expected**: 2.0-2.5 seconds (60% improvement)
+- **Savings**: 3.0-3.3 seconds
 
-初回ロード時は近くの店舗10-20件のみ返却し、スクロール時に追加ロード。
+### After Phase 2 (Database Indexes)
 
-## 📁 実装ファイル
+- **Current**: 2.0-2.5 seconds
+- **Expected**: 1.2-1.5 seconds (additional 40-50% improvement)
+- **Savings**: 0.8-1.0 seconds
 
-1. `backend/migrations/add_performance_indexes.sql` - 新規作成
-2. `backend/src/utils/cache.ts` - 新規作成
-3. `backend/src/routes/shops.ts` - 最適化
-4. `openspec/backlog.md` - TASK-012追加
+### Total Expected Result
 
-## ✅ 受け入れ基準
+- **Final Response Time**: 1.2-1.5 seconds
+- **Total Improvement**: 70-75% faster
 
-- [ ] データベースインデックスが追加されている
-- [ ] 店舗検索APIのレスポンス時間が**2秒以内**
-- [ ] メモリキャッシュが実装されている
-- [ ] 距離計算が1回のみ実行されている
-- [ ] 不要なフィールドが削除されている
-- [ ] 本番環境で動作確認済み
+## Implementation Steps
 
-## 📊 期待される改善効果
+1. Rewrite shop search query to use WITH clause for single distance calculation
+2. Fix parameter handling to avoid duplication
+3. Connect to Railway PostgreSQL and execute index migration
+4. Test in local environment
+5. Deploy to Railway
+6. Measure production performance
+7. Update backlog (mark TASK-012 as completed)
 
-- **現在**: 4.85秒
-- **目標**: **1.5秒以内**（70%削減）
-- **理想**: **1秒以内**（80%削減）
+## Notes
 
+- Railway region (Singapore) is optimal for Japan access - no need to change
+- Trial Plan resources are limited but sufficient after query optimization
+- The main bottleneck is algorithmic (3x redundant calculations), not infrastructure
 
 ### To-dos
 
