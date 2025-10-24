@@ -157,7 +157,6 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
   if (error) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">地図で確認</h2>
         <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
           <div className="text-center">
             <p className="text-gray-600 mb-2">{error}</p>
@@ -190,7 +189,6 @@ export const MapView: React.FC<MapViewProps> = ({ shops, userLocation, onShopSel
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">地図で確認</h2>
       <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg">
         <div ref={mapRef} className="w-full h-full" />
       </div>

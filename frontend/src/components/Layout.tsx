@@ -88,7 +88,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
 
       {/* フッター */}
       <footer className="bg-white border-t border-gray-200/60 text-gray-600 text-center py-6">
-        <p className="text-sm font-medium">&copy; 2024 ふらのみ. All rights reserved.</p>
+        <p className="text-sm font-medium">&copy; 2025 ふらのみ. All rights reserved.</p>
       </footer>
     </div>
   );

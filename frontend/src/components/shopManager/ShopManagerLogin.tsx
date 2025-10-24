@@ -128,16 +128,6 @@ export const ShopManagerLogin: React.FC = () => {
                 )}
               </Button>
             </form>
-
-            {/* テスト用の情報 */}
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-              <h4 className="text-sm font-medium text-blue-800 mb-2">テスト用ログイン情報</h4>
-              <div className="text-xs text-blue-700 space-y-1">
-                <p><strong>ユーザー名:</strong> manager1</p>
-                <p><strong>パスワード:</strong> password</p>
-                <p className="text-blue-600 mt-2">※ バックエンドAPIと連携済み</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

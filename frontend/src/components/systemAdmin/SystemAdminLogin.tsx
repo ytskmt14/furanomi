@@ -117,7 +117,7 @@ export const SystemAdminLogin: React.FC = () => {
         {/* フッター */}
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            テストアカウント: admin / admin123
+            &copy; 2025 ふらのみ. All rights reserved.
           </p>
         </div>
       </div>
