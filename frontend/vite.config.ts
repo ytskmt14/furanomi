@@ -16,10 +16,13 @@ export default defineConfig({
         manualChunks: undefined,
       },
     },
+    assetsDir: 'assets',
+    copyPublicDir: true,
   },
   server: {
     fs: {
       strict: false,
     },
   },
+  publicDir: 'public',
 })
