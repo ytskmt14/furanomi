@@ -14,6 +14,7 @@ import { StaffAvailabilityUpdate } from './components/staff/StaffAvailabilityUpd
 import { apiService } from './services/api';
 import { Shop } from './types/shop';
 import { Button } from './components/ui/button';
+import { Toaster } from './components/ui/toaster';
 
 // 利用者用アプリ
 const UserApp: React.FC = () => {
@@ -262,6 +263,7 @@ function App() {
           {/* デフォルトは利用者用アプリ */}
           <Route path="/" element={<Navigate to="/user" replace />} />
         </Routes>
+        <Toaster />
       </Router>
     </ErrorBoundary>
   );

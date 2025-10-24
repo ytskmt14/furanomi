@@ -5,10 +5,12 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { apiService } from '../../services/api';
+import { useToast } from '../../hooks/use-toast';
 
 export const StaffAvailabilityUpdate: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const { toast } = useToast();
   
   const [passcode, setPasscode] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -80,7 +82,10 @@ export const StaffAvailabilityUpdate: React.FC = () => {
 
     try {
       await apiService.updateAvailabilityByStaff(token, passcode, selectedStatus);
-      alert('空き状況を更新しました！');
+      toast({
+        title: "更新完了",
+        description: "空き状況を更新しました！",
+      });
     } catch (err) {
       console.error('Update error:', err);
       setError('更新に失敗しました。もう一度お試しください。');

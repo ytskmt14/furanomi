@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiService } from '../../services/api';
+import { useToast } from '../../hooks/use-toast';
 
 interface Shop {
   id: string;
@@ -19,6 +20,7 @@ interface StaffAccessInfo {
 }
 
 export const AvailabilityUpdate: React.FC = () => {
+  const { toast } = useToast();
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,10 +117,17 @@ export const AvailabilityUpdate: React.FC = () => {
     
     try {
       await apiService.updateAvailability(shop.id, selectedStatus);
-      alert('空き状況を更新しました！');
+      toast({
+        title: "更新完了",
+        description: "空き状況を更新しました！",
+      });
     } catch (error) {
       console.error('Update error:', error);
-      alert('更新に失敗しました。もう一度お試しください。');
+      toast({
+        title: "更新失敗",
+        description: "更新に失敗しました。もう一度お試しください。",
+        variant: "destructive",
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -132,10 +141,17 @@ export const AvailabilityUpdate: React.FC = () => {
     try {
       const newInfo = await apiService.updateStaffAccessInfo(shop.id, true, false);
       setStaffAccessInfo(newInfo);
-      alert('QRコードを再発行しました！');
+      toast({
+        title: "再発行完了",
+        description: "QRコードを再発行しました！",
+      });
     } catch (error) {
       console.error('Regenerate error:', error);
-      alert('再発行に失敗しました。もう一度お試しください。');
+      toast({
+        title: "再発行失敗",
+        description: "再発行に失敗しました。もう一度お試しください。",
+        variant: "destructive",
+      });
     } finally {
       setIsRegenerating(false);
     }
@@ -149,10 +165,17 @@ export const AvailabilityUpdate: React.FC = () => {
     try {
       const newInfo = await apiService.updateStaffAccessInfo(shop.id, false, true);
       setStaffAccessInfo(newInfo);
-      alert('合言葉を再生成しました！');
+      toast({
+        title: "再生成完了",
+        description: "合言葉を再生成しました！",
+      });
     } catch (error) {
       console.error('Regenerate error:', error);
-      alert('再生成に失敗しました。もう一度お試しください。');
+      toast({
+        title: "再生成失敗",
+        description: "再生成に失敗しました。もう一度お試しください。",
+        variant: "destructive",
+      });
     } finally {
       setIsRegenerating(false);
     }
@@ -320,7 +343,9 @@ export const AvailabilityUpdate: React.FC = () => {
                   size="sm"
                   onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/staff/availability?token=${staffAccessInfo?.staff_access_token || ''}`);
-                    alert('URLをコピーしました');
+                    toast({
+                      description: "URLをコピーしました",
+                    });
                   }}
                 >
                   コピー

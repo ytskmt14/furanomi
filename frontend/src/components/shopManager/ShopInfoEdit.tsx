@@ -6,6 +6,7 @@ import { Label } from '../ui/label';
 import { FileUpload } from '../ui/file-upload';
 import { ShopFormData, BusinessHours } from '../../types/shopManager';
 import { apiService } from '../../services/api';
+import { useToast } from '../../hooks/use-toast';
 
 interface Shop {
   id: string;
@@ -20,6 +21,7 @@ interface Shop {
 }
 
 export const ShopInfoEdit: React.FC = () => {
+  const { toast } = useToast();
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -158,10 +160,17 @@ export const ShopInfoEdit: React.FC = () => {
         image_url: updatedShopData.image_url || '',
       });
       
-      alert('店舗情報を保存しました！');
+      toast({
+        title: "保存完了",
+        description: "店舗情報を保存しました！",
+      });
     } catch (error) {
       console.error('Save error:', error);
-      alert('保存に失敗しました。もう一度お試しください。');
+      toast({
+        title: "保存失敗",
+        description: "保存に失敗しました。もう一度お試しください。",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
