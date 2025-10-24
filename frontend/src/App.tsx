@@ -86,7 +86,7 @@ const UserApp: React.FC = () => {
     });
   }, []);
 
-  // 店舗データを読み込み
+  // 店舗データを読み込み（依存配列を空にして、初回のみ実行）
   const loadShops = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -115,12 +115,12 @@ const UserApp: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [getUserLocation]);
+  }, []); // 依存配列を空にして、初回のみ実行
 
-  // 初期データ読み込み
+  // 初期データ読み込み（初回のみ実行）
   useEffect(() => {
     loadShops();
-  }, [loadShops]);
+  }, []); // 依存配列を空にして、初回のみ実行
 
   // メモ化されたコンポーネント
   const shopListComponent = useMemo(() => (
