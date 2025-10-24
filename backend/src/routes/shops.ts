@@ -26,7 +26,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   let paramCount = 1;
   let query: string;
 
-  // 位置情報が提供された場合はWITH句で距離計算を1回のみ実行
+  // 位置情報が提供された場合はWITH句で距離計算と営業時間判定を1回のみ実行
   if (lat && lng) {
     query = `
       WITH shop_distances AS (
@@ -42,7 +42,12 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
               cos(radians(s.longitude) - radians($${paramCount + 1})) + 
               sin(radians($${paramCount})) * sin(radians(s.latitude))
             )
-          ) as distance
+          ) as distance,
+          CASE 
+            WHEN sa.status = 'closed' THEN 'closed'
+            WHEN s.business_hours IS NULL OR s.business_hours = '{}' THEN sa.status
+            ELSE sa.status
+          END as final_availability_status
         FROM shops s
         LEFT JOIN shop_availability sa ON s.id = sa.shop_id
         WHERE s.is_active = true
@@ -57,7 +62,12 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
         s.id, s.name, s.description, s.address, s.phone, s.email, 
         s.category, s.latitude, s.longitude, s.business_hours, 
         s.image_url, s.is_active,
-        sa.status as availability_status, sa.updated_at as availability_updated_at
+        sa.status as availability_status, sa.updated_at as availability_updated_at,
+        CASE 
+          WHEN sa.status = 'closed' THEN 'closed'
+          WHEN s.business_hours IS NULL OR s.business_hours = '{}' THEN sa.status
+          ELSE sa.status
+        END as final_availability_status
       FROM shops s
       LEFT JOIN shop_availability sa ON s.id = sa.shop_id
       WHERE s.is_active = true
@@ -133,14 +143,14 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  // ソート（距離は既にWITH句で計算済み）
+  // ソート（距離と営業時間判定は既にWITH句で計算済み）
   if (lat && lng) {
     query += ` ORDER BY 
-      CASE WHEN availability_status = 'closed' THEN 1 ELSE 0 END ASC,
+      CASE WHEN final_availability_status = 'closed' THEN 1 ELSE 0 END ASC,
       distance ASC`;
   } else {
     query += ` ORDER BY 
-      CASE WHEN sa.status = 'closed' THEN 1 ELSE 0 END ASC,
+      CASE WHEN final_availability_status = 'closed' THEN 1 ELSE 0 END ASC,
       s.name ASC`;
   }
 
@@ -200,12 +210,8 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     return false; // 営業時間外
   };
 
-  // 結果を整形（距離計算は既にSQLで実行済み）
+  // 結果を整形（距離計算と営業時間判定は既にSQLで実行済み）
   const formattedShops = result.rows.map(row => {
-    // 営業時間に基づいて自動判定
-    const isOpen = isWithinBusinessHours(row.business_hours);
-    const finalAvailabilityStatus = isOpen ? row.availability_status : 'closed';
-
     const shop = {
       id: row.id,
       name: row.name,
@@ -219,7 +225,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       business_hours: row.business_hours,
       image_url: row.image_url,
       is_active: row.is_active,
-      availability_status: finalAvailabilityStatus,
+      availability_status: row.final_availability_status || row.availability_status,
       availability_updated_at: row.availability_updated_at
     };
 
@@ -236,7 +242,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   // SQLで既にソート済みなので、営業時間自動判定後のみ再ソート
   const sortedShops = formattedShops.sort((a, b) => {
-    // 営業時間外の店舗を最後に
+    // 営業時間外の店舗を最後に（SQLで既にソート済み）
     if (a.availability_status === 'closed' && b.availability_status !== 'closed') {
       return 1;
     }
