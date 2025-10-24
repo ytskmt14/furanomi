@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { db } from '../config/database';
 import { asyncHandler } from '../middleware/errorHandler';
 import { authenticateToken, requireShopManager, requireSystemAdmin } from '../middleware/auth';
+import { cache } from '../utils/cache';
 
 const router = express.Router();
 
@@ -25,13 +26,17 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     SELECT 
       s.id, s.name, s.description, s.address, s.phone, s.email, 
       s.category, s.latitude, s.longitude, s.business_hours, 
-      s.image_url, s.is_active, s.created_at, s.updated_at,
-      sa.status as availability_status, sa.updated_at as availability_updated_at,
-      sm.id as shop_manager_id, sm.username as shop_manager_username,
-      sm.first_name as shop_manager_first_name, sm.last_name as shop_manager_last_name
+      s.image_url, s.is_active,
+      sa.status as availability_status, sa.updated_at as availability_updated_at
+      ${lat && lng ? `, (
+        6371000 * acos(
+          cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
+          cos(radians(s.longitude) - radians($${paramCount + 1})) + 
+          sin(radians($${paramCount})) * sin(radians(s.latitude))
+        )
+      ) as distance` : ''}
     FROM shops s
     LEFT JOIN shop_availability sa ON s.id = sa.shop_id
-    LEFT JOIN shop_managers sm ON s.shop_manager_id = sm.id
     WHERE s.is_active = true
   `;
 
@@ -43,17 +48,26 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   if (radius) {
     searchRadius = parseFloat(radius as string) * 1000; // kmをmに変換
   } else {
-    // システム設定から検索半径を取得
-    try {
-      const settingsResult = await db.query(
-        'SELECT value FROM system_settings WHERE key = $1',
-        ['search_radius']
-      );
-      if (settingsResult.rows.length > 0) {
-        searchRadius = parseFloat(settingsResult.rows[0].value);
+    // システム設定から検索半径を取得（キャッシュ使用）
+    const cacheKey = 'system_settings_search_radius';
+    let cachedRadius = cache.get<number>(cacheKey);
+    
+    if (cachedRadius !== null) {
+      searchRadius = cachedRadius;
+    } else {
+      try {
+        const settingsResult = await db.query(
+          'SELECT value FROM system_settings WHERE key = $1',
+          ['search_radius']
+        );
+        if (settingsResult.rows.length > 0) {
+          searchRadius = parseFloat(settingsResult.rows[0].value);
+          // 5分間キャッシュ
+          cache.set(cacheKey, searchRadius, 300);
+        }
+      } catch (error) {
+        // デフォルト値を使用
       }
-    } catch (error) {
-      // デフォルト値を使用
     }
   }
 
@@ -71,32 +85,18 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     paramCount++;
   }
 
-  // 位置情報フィルタ（Haversine formula - メートル単位）
+  // 位置情報フィルタ（距離計算は既にSELECT句で実行済み）
   if (lat && lng) {
-    query += ` AND (
-      6371000 * acos(
-        cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
-        cos(radians(s.longitude) - radians($${paramCount + 1})) + 
-        sin(radians($${paramCount})) * sin(radians(s.latitude))
-      )
-    ) <= $${paramCount + 2}`;
-    params.push(parseFloat(lat as string), parseFloat(lng as string), searchRadius);
-    paramCount += 3;
+    query += ` AND distance <= $${paramCount}`;
+    params.push(searchRadius);
+    paramCount++;
   }
 
-  // 営業時間外を最後に、それ以外は距離または名前でソート
+  // ソート（距離計算は既にSELECT句で実行済み）
   if (lat && lng) {
     query += ` ORDER BY 
       CASE WHEN sa.status = 'closed' THEN 1 ELSE 0 END ASC,
-      (
-        6371000 * acos(
-          cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
-          cos(radians(s.longitude) - radians($${paramCount + 1})) + 
-          sin(radians($${paramCount})) * sin(radians(s.latitude))
-        )
-      ) ASC`;
-    params.push(parseFloat(lat as string), parseFloat(lng as string));
-    paramCount += 2;
+      distance ASC`;
   } else {
     query += ` ORDER BY 
       CASE WHEN sa.status = 'closed' THEN 1 ELSE 0 END ASC,
@@ -159,7 +159,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     return false; // 営業時間外
   };
 
-  // 結果を整形して店舗管理者の情報と距離を含める
+  // 結果を整形（距離計算は既にSQLで実行済み）
   const formattedShops = result.rows.map(row => {
     // 営業時間に基づいて自動判定
     const isOpen = isWithinBusinessHours(row.business_hours);
@@ -178,33 +178,22 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       business_hours: row.business_hours,
       image_url: row.image_url,
       is_active: row.is_active,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
       availability_status: finalAvailabilityStatus,
-      availability_updated_at: row.availability_updated_at,
-      shop_manager: row.shop_manager_id ? {
-        id: row.shop_manager_id,
-        username: row.shop_manager_username,
-        first_name: row.shop_manager_first_name,
-        last_name: row.shop_manager_last_name
-      } : null
+      availability_updated_at: row.availability_updated_at
     };
 
-    // 位置情報が提供された場合は距離を計算
-    if (lat && lng) {
-      const userLat = parseFloat(lat as string);
-      const userLng = parseFloat(lng as string);
-      const distance = calculateDistance(userLat, userLng, parseFloat(row.latitude), parseFloat(row.longitude));
+    // 位置情報が提供された場合はSQLで計算済みの距離を使用
+    if (lat && lng && row.distance) {
       return {
         ...shop,
-        distance: Math.round(distance) // メートル単位で四捨五入
+        distance: Math.round(row.distance) // メートル単位で四捨五入
       };
     }
 
     return shop;
   });
 
-  // 営業時間外を最後に、それ以外は距離または名前でソート（営業時間自動判定後）
+  // SQLで既にソート済みなので、営業時間自動判定後のみ再ソート
   const sortedShops = formattedShops.sort((a, b) => {
     // 営業時間外の店舗を最後に
     if (a.availability_status === 'closed' && b.availability_status !== 'closed') {
@@ -214,12 +203,12 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       return -1;
     }
     
-    // 位置情報が提供された場合は距離でソート
+    // 位置情報が提供された場合は距離でソート（SQLで既にソート済み）
     if (lat && lng && (a as any).distance && (b as any).distance) {
       return (a as any).distance - (b as any).distance;
     }
     
-    // それ以外は名前でソート
+    // それ以外は名前でソート（SQLで既にソート済み）
     return a.name.localeCompare(b.name);
   });
   
