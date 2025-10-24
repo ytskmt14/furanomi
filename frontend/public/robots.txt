@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# 管理画面はクロール禁止
+Disallow: /shop-manager
+Disallow: /system-admin
+
+Sitemap: https://furanomi.com/sitemap.xml
