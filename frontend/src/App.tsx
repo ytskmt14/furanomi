@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ShopList } from './components/ShopList';
@@ -8,13 +8,15 @@ import { SearchModal } from './components/SearchModal';
 import { FloatingSearchButton } from './components/FloatingSearchButton';
 import { LoadingList } from './components/Loading';
 import { ErrorBoundary, ErrorMessage, NoSearchResults } from './components/ErrorHandling';
-import { ShopManagerApp } from './components/shopManager/ShopManagerApp';
-import { SystemAdminApp } from './components/systemAdmin/SystemAdminApp';
-import { StaffAvailabilityUpdate } from './components/staff/StaffAvailabilityUpdate';
 import { apiService } from './services/api';
 import { Shop } from './types/shop';
 import { Button } from './components/ui/button';
 import { Toaster } from './components/ui/toaster';
+
+// Code Splitting: 管理画面を遅延ロード
+const ShopManagerApp = lazy(() => import('./components/shopManager/ShopManagerApp'));
+const SystemAdminApp = lazy(() => import('./components/systemAdmin/SystemAdminApp'));
+const StaffAvailabilityUpdate = lazy(() => import('./components/staff/StaffAvailabilityUpdate'));
 
 // 利用者用アプリ
 const UserApp: React.FC = () => {
@@ -27,38 +29,38 @@ const UserApp: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
 
-  const handleShopSelect = (shop: Shop) => {
+  const handleShopSelect = useCallback((shop: Shop) => {
     setSelectedShop(shop);
-  };
+  }, []);
 
-  const handleCloseDetail = () => {
+  const handleCloseDetail = useCallback(() => {
     setSelectedShop(null);
-  };
+  }, []);
 
-  const handleSearchOpen = () => {
+  const handleSearchOpen = useCallback(() => {
     setIsSearchOpen(true);
-  };
+  }, []);
 
-  const handleSearchClose = () => {
+  const handleSearchClose = useCallback(() => {
     setIsSearchOpen(false);
-  };
+  }, []);
 
-  const handleFilteredShops = (shops: Shop[]) => {
+  const handleFilteredShops = useCallback((shops: Shop[]) => {
     setFilteredShops(shops);
-  };
+  }, []);
 
-  const handleRetry = async () => {
+  const handleRetry = useCallback(async () => {
     setError(null);
     setIsLoading(true);
     await loadShops();
-  };
+  }, []);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setFilteredShops(shops);
-  };
+  }, [shops]);
 
   // 位置情報を取得
-  const getUserLocation = (): Promise<{lat: number, lng: number}> => {
+  const getUserLocation = useCallback((): Promise<{lat: number, lng: number}> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error('位置情報がサポートされていません'));
@@ -82,10 +84,10 @@ const UserApp: React.FC = () => {
         }
       );
     });
-  };
+  }, []);
 
   // 店舗データを読み込み
-  const loadShops = async () => {
+  const loadShops = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -113,12 +115,25 @@ const UserApp: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getUserLocation]);
 
   // 初期データ読み込み
   useEffect(() => {
     loadShops();
-  }, []);
+  }, [loadShops]);
+
+  // メモ化されたコンポーネント
+  const shopListComponent = useMemo(() => (
+    <ShopList shops={filteredShops} onShopSelect={handleShopSelect} />
+  ), [filteredShops, handleShopSelect]);
+
+  const mapViewComponent = useMemo(() => (
+    <MapView 
+      shops={filteredShops} 
+      userLocation={userLocation}
+      onShopSelect={handleShopSelect} 
+    />
+  ), [filteredShops, userLocation, handleShopSelect]);
 
   return (
     <Layout userLocation={userLocation}>
@@ -160,13 +175,9 @@ const UserApp: React.FC = () => {
         ) : (
           <>
             {viewMode === 'list' ? (
-              <ShopList shops={filteredShops} onShopSelect={handleShopSelect} />
+              shopListComponent
             ) : (
-              <MapView 
-                shops={filteredShops} 
-                userLocation={userLocation}
-                onShopSelect={handleShopSelect} 
-              />
+              mapViewComponent
             )}
           </>
         )}
@@ -251,14 +262,26 @@ function App() {
           {/* 利用者用アプリ（ルート表示） */}
           <Route path="/user/*" element={<UserApp />} />
           
-          {/* 店舗管理者用アプリ */}
-          <Route path="/shop-manager/*" element={<ShopManagerApp />} />
+          {/* 店舗管理者用アプリ（Code Splitting） */}
+          <Route path="/shop-manager/*" element={
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+              <ShopManagerApp />
+            </Suspense>
+          } />
           
-          {/* システム管理者用アプリ */}
-          <Route path="/system-admin/*" element={<SystemAdminApp />} />
+          {/* システム管理者用アプリ（Code Splitting） */}
+          <Route path="/system-admin/*" element={
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+              <SystemAdminApp />
+            </Suspense>
+          } />
           
-          {/* スタッフ用アプリ */}
-          <Route path="/staff/availability" element={<StaffAvailabilityUpdate />} />
+          {/* スタッフ用アプリ（Code Splitting） */}
+          <Route path="/staff/availability" element={
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+              <StaffAvailabilityUpdate />
+            </Suspense>
+          } />
           
           {/* デフォルトは利用者用アプリ */}
           <Route path="/" element={<Navigate to="/user" replace />} />

@@ -7,7 +7,7 @@ import { Label } from '../ui/label';
 import { apiService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 
-export const StaffAvailabilityUpdate: React.FC = () => {
+const StaffAvailabilityUpdate: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const { toast } = useToast();
@@ -277,3 +277,5 @@ export const StaffAvailabilityUpdate: React.FC = () => {
     </div>
   );
 };
+
+export default StaffAvailabilityUpdate;

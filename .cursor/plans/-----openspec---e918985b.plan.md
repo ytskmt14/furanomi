@@ -1,63 +1,119 @@
-<!-- e918985b-acee-4171-8e21-d779cf77c2e7 2d3d4858-40a8-4060-bd96-1ce989e2d8b2 -->
-# Vercel SPA Static Files Configuration
+<!-- e918985b-acee-4171-8e21-d779cf77c2e7 db0f7232-db9f-4427-a29d-3f3923e604e6 -->
+# 管理画面のSEO対策（TASK-007 & TASK-008）
 
-## 現状の問題
+## 概要
 
-`frontend/public/sitemap.xml`と`frontend/public/robots.txt`が存在するが、Vercel上でアクセスすると`index.html`の内容が返される。これはSPAのルーティング設定により、すべてのリクエストが`index.html`にフォールバックされているため。
+店舗管理者アプリとシステム管理者アプリの両方に、管理画面として適切なSEO設定を行います。主に`noindex`メタタグを設定して、検索エンジンにインデックスされないようにします。
 
-## 解決方法
+## 対象ファイル
 
-Web検索の結果、Vercelの公式推奨方法は**`vercel.json`に`rewrites`設定を追加**すること。ただし、Viteを使用している場合、`public/`ディレクトリのファイルは自動的にルートに配信されるべきだが、Vercelのデプロイ時にSPAルーティングが優先されている。
+- `/shop-manager/*` - 店舗管理者アプリ
+- `/system-admin/*` - システム管理者アプリ
+
+## 実装方針
+
+### 1. 店舗管理者アプリのSEO設定
+
+`frontend/src/pages/shop-manager/`配下のルートコンポーネントまたはレイアウトコンポーネントで、`<Helmet>`または`useEffect`を使用してメタタグを設定します。
+
+#### 設定するメタタグ
+
+```html
+<meta name="robots" content="noindex, nofollow" />
+<meta name="googlebot" content="noindex, nofollow" />
+<title>店舗管理 - ふらのみ</title>
+```
+
+### 2. システム管理者アプリのSEO設定
+
+`frontend/src/pages/system-admin/`配下のルートコンポーネントまたはレイアウトコンポーネントで、同様にメタタグを設定します。
+
+#### 設定するメタタグ
+
+```html
+<meta name="robots" content="noindex, nofollow" />
+<meta name="googlebot" content="noindex, nofollow" />
+<title>システム管理 - ふらのみ</title>
+```
 
 ## 実装手順
 
-### 1. `vercel.json`の修正（手動コピー方式）
+### Step 1: 店舗管理者アプリのレイアウトコンポーネント確認
 
-プロジェクトルートの`vercel.json`を以下のように修正：
+`frontend/src/components/shopManager/`または該当するレイアウトファイルを確認し、メタタグを追加する場所を特定します。
 
-```json
-{
-  "buildCommand": "cd frontend && npm run build && cp public/sitemap.xml public/robots.txt dist/",
-  "outputDirectory": "frontend/dist",
-  "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
-    { "source": "/robots.txt", "destination": "/robots.txt" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
+### Step 2: システム管理者アプリのレイアウトコンポーネント確認
+
+`frontend/src/components/systemAdmin/`または該当するレイアウトファイルを確認し、メタタグを追加する場所を特定します。
+
+### Step 3: 両方のアプリにnoindexメタタグを追加
+
+React Helmetまたは`useEffect`を使用して、動的にメタタグを設定します。
+
+### Step 4: 動作確認
+
+- 店舗管理者アプリ（`/shop-manager/*`）でブラウザの開発者ツールを開き、`<head>`内に`noindex`メタタグが存在することを確認
+- システム管理者アプリ（`/system-admin/*`）でも同様に確認
+
+### Step 5: バックログの更新
+
+- TASK-007とTASK-008を完了としてバックログから削除
+
+### Step 6: コミットとデプロイ
+
+- 変更をコミット
+- GitHubにプッシュ
+- Vercelの自動デプロイを確認
+
+## 技術的な詳細
+
+### 実装方法: useEffect（推奨）
+
+管理画面はSEO対策やSSRが不要なため、シンプルな`useEffect`を使用します。
+
+```typescript
+useEffect(() => {
+  const metaRobots = document.createElement('meta');
+  metaRobots.name = 'robots';
+  metaRobots.content = 'noindex, nofollow';
+  document.head.appendChild(metaRobots);
+
+  const metaGooglebot = document.createElement('meta');
+  metaGooglebot.name = 'googlebot';
+  metaGooglebot.content = 'noindex, nofollow';
+  document.head.appendChild(metaGooglebot);
+
+  document.title = '店舗管理 - ふらのみ';  // または 'システム管理 - ふらのみ'
+
+  return () => {
+    document.head.removeChild(metaRobots);
+    document.head.removeChild(metaGooglebot);
+  };
+}, []);
 ```
 
-**説明:**
+**理由:**
 
-- ビルドコマンドで`cp`コマンドを使用して静的ファイルを手動コピー
-- `frontend/public/sitemap.xml`と`frontend/public/robots.txt`を`frontend/dist/`にコピー
-- Viteの自動コピーに依存せず、明示的にファイルを配置
-- `rewrites`設定で静的ファイルを優先的に配信
-- 最も確実で、ビルドログでもコピー操作を確認可能
+- 管理画面は検索エンジンにインデックスされるべきではない
+- SSR不要（認証後にしかアクセスできない）
+- 追加の依存関係不要
+- シンプルで保守しやすい
 
-### 2. ビルドとデプロイ
+## 受け入れ基準
 
-- フロントエンドをビルドして`sitemap.xml`と`robots.txt`が`frontend/dist/`に正しくコピーされることを確認
-- Gitにコミットしてプッシュ
-- Vercelの自動デプロイ完了を待つ
-
-### 3. 動作確認
-
-以下のURLにアクセスして正しく配信されることを確認：
-
-- `https://furanomi.com/sitemap.xml` → XML形式で表示
-- `https://furanomi.com/robots.txt` → テキスト形式で表示
-
-## 技術的根拠
-
-- Vercel公式ドキュメントとコミュニティのベストプラクティスに基づく
-- `rewrites`の正規表現による除外パターンは、SPAルーティングと静的ファイル配信を両立させる標準的な方法
-- Viteの`public/`ディレクトリはビルド時に`dist/`にコピーされるため、配置場所の変更は不要
+- [ ] 店舗管理者アプリに`noindex, nofollow`メタタグが設定されている
+- [ ] システム管理者アプリに`noindex, nofollow`メタタグが設定されている
+- [ ] 両方のアプリで適切なタイトルが設定されている
+- [ ] ブラウザの開発者ツールで確認可能
+- [ ] バックログからTASK-007とTASK-008が削除されている
 
 ### To-dos
 
-- [ ] vercel.jsonを作成してrewrites設定を追加
-- [ ] フロントエンドをビルドして静的ファイルの配置を確認
-- [ ] 変更をGitにコミット
-- [ ] GitHubにプッシュしてVercelデプロイ
-- [ ] sitemap.xmlとrobots.txtの配信を確認
+- [ ] 店舗管理者アプリのレイアウトコンポーネントを確認
+- [ ] システム管理者アプリのレイアウトコンポーネントを確認
+- [ ] 店舗管理者アプリにnoindexメタタグを追加
+- [ ] システム管理者アプリにnoindexメタタグを追加
+- [ ] 店舗管理者アプリで動作確認
+- [ ] システム管理者アプリで動作確認
+- [ ] バックログからTASK-007とTASK-008を削除
+- [ ] 変更をコミット・プッシュしてデプロイ

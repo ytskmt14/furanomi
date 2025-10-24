@@ -6,7 +6,7 @@ import { ShopManagerDashboard } from './ShopManagerDashboard';
 import { ShopInfoEdit } from './ShopInfoEdit';
 import { AvailabilityUpdate } from './AvailabilityUpdate';
 
-export const ShopManagerApp: React.FC = () => {
+const ShopManagerApp: React.FC = () => {
   return (
     <Routes>
       {/* ログイン画面 */}
@@ -24,3 +24,5 @@ export const ShopManagerApp: React.FC = () => {
     </Routes>
   );
 };
+
+export default ShopManagerApp;

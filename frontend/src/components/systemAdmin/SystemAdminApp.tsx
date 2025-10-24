@@ -7,7 +7,7 @@ import { ShopsManagement } from './ShopsManagement';
 import { ManagersManagement } from './ManagersManagement';
 import { SystemSettings } from './SystemSettings';
 
-export const SystemAdminApp: React.FC = () => {
+const SystemAdminApp: React.FC = () => {
   return (
     <Routes>
       <Route path="login" element={<SystemAdminLogin />} />
@@ -24,3 +24,5 @@ export const SystemAdminApp: React.FC = () => {
     </Routes>
   );
 };
+
+export default SystemAdminApp;
