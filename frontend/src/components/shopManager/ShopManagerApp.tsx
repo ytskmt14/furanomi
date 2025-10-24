@@ -7,7 +7,6 @@ import { ShopInfoEdit } from './ShopInfoEdit';
 import { AvailabilityUpdate } from './AvailabilityUpdate';
 
 export const ShopManagerApp: React.FC = () => {
-  console.log('ShopManagerApp rendered');
   return (
     <Routes>
       {/* ログイン画面 */}

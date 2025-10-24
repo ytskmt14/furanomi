@@ -7,7 +7,6 @@ import { Label } from '../ui/label';
 import { apiService } from '../../services/api';
 
 export const ShopManagerLogin: React.FC = () => {
-  console.log('ShopManagerLogin rendered');
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -23,13 +22,12 @@ export const ShopManagerLogin: React.FC = () => {
 
     try {
       // バックエンドAPIを使用した認証
-      const response = await apiService.shopManagerLogin({
+      await apiService.shopManagerLogin({
         username: formData.username,
         password: formData.password,
       });
 
       // ログイン成功
-      console.log('Login successful:', response);
       navigate('/shop-manager/');
     } catch (err) {
       console.error('Login error:', err);

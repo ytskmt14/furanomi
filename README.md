@@ -115,6 +115,29 @@ npm run dev
 - 店舗管理者の管理
 - システム設定
 
+## API仕様書
+
+API仕様書はSwagger/OpenAPI 3.0形式で提供されています。
+
+### 開発環境
+Swagger UIで仕様書を閲覧・テスト：
+```
+http://localhost:3001/api-docs
+```
+
+**注意**: Swagger UIは開発環境（`NODE_ENV=development`）でのみ利用可能です。本番環境では無効化されています。
+
+### ファイル
+- `backend/swagger.yaml` - OpenAPI 3.0形式の仕様書
+
+### 主要エンドポイント
+- **認証**: `/api/auth/*` - ログイン/ログアウト
+- **店舗**: `/api/shops/*` - 店舗情報の取得・管理
+- **空き状況**: `/api/availability/*` - 空き状況の取得・更新
+- **スタッフアクセス**: `/api/staff/*` - QRコード機能
+- **システム管理**: `/api/system/*` - システム設定・統計
+- **Geocoding**: `/api/geocoding` - 住所から位置情報取得
+
 ## ライセンス
 
 MIT License

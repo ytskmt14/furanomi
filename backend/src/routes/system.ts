@@ -52,6 +52,8 @@ router.get('/postal-code/:code', authenticateToken, requireSystemAdmin, asyncHan
 }));
 
 // 住所から位置情報を取得（プロキシ経由）
+// Google Maps Geocoding APIへのプロキシエンドポイント
+// フロントエンドにAPIキーを露出させないためのセキュリティ対策
 router.post('/geocode', authenticateToken, requireSystemAdmin, asyncHandler(async (req: Request, res: Response) => {
   const { address } = req.body;
 
@@ -65,6 +67,7 @@ router.post('/geocode', authenticateToken, requireSystemAdmin, asyncHandler(asyn
 
   try {
     // サーバーサイドでGoogle Maps Geocoding APIを呼び出し
+    // APIキーをサーバーサイドで管理し、フロントエンドからは隠蔽
     const response = await fetch(`${GEOCODING_API_URL}?address=${encodeURIComponent(address)}&key=${GEOCODING_API_KEY}&language=ja`);
     const data = await response.json() as any;
 

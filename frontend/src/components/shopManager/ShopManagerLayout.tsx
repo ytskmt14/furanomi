@@ -21,7 +21,6 @@ export const ShopManagerLayout: React.FC<ShopManagerLayoutProps> = ({ children }
     const fetchUser = async () => {
       try {
         const response = await apiService.getCurrentUser();
-        console.log('User response:', response); // デバッグ用
         setUser(response.user);
       } catch (error) {
         console.error('Failed to fetch user:', error);

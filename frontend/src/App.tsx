@@ -27,7 +27,6 @@ const UserApp: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
 
   const handleShopSelect = (shop: Shop) => {
-    console.log('Shop selected:', shop);
     setSelectedShop(shop);
   };
 

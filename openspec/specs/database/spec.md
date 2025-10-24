@@ -18,12 +18,20 @@ CREATE TABLE shops (
   category VARCHAR(50) NOT NULL,
   latitude DECIMAL(10, 8) NOT NULL,
   longitude DECIMAL(11, 8) NOT NULL,
+  postal_code VARCHAR(8),
+  formatted_address VARCHAR(500),
+  place_id VARCHAR(255),
+  geocoded_at TIMESTAMP WITH TIME ZONE,
   business_hours JSONB NOT NULL,
   image_url TEXT,
+  staff_access_token UUID DEFAULT uuid_generate_v4(),
+  staff_passcode VARCHAR(4) DEFAULT NULL,
+  staff_token_created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   shop_manager_id UUID REFERENCES shop_managers(id) UNIQUE,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT shops_staff_access_token_unique UNIQUE (staff_access_token)
 );
 ```
 
@@ -85,11 +93,20 @@ ALTER TABLE shops ADD COLUMN staff_passcode VARCHAR(4);
 - **WHEN** 店舗管理者がスタッフ用アクセス情報を生成する
 - **THEN** 無期限のアクセストークンと4桁パスコードが生成される
 - **AND** 店舗テーブルに保存される
+- **AND** staff_access_tokenはUUID形式で一意性が保証される
+- **AND** staff_passcodeは4桁の数字でランダム生成される
 
 #### Scenario: スタッフ認証
 - **WHEN** スタッフがQRコードとパスコードで認証する
 - **THEN** アクセストークンとパスコードが検証される
 - **AND** 認証成功時は空き状況更新が可能になる
+- **AND** QRコードにはstaff_access_tokenが含まれる
+
+#### Scenario: 住所情報管理
+- **WHEN** 店舗が登録または更新される
+- **THEN** 郵便番号、正規化住所、Place IDが保存される
+- **AND** Geocoding実行日時が記録される
+- **AND** 画像データはBase64エンコードでTEXT型カラムに保存される
 
 ### Requirement: 空き状況テーブル（一意制約）
 店舗の空き状況は1店舗につき1レコードで管理される。システムSHALL店舗ごとの空き状況の重複を防ぐ。
@@ -209,6 +226,15 @@ CREATE INDEX idx_shops_active ON shops(is_active);
 
 -- 空き状況検索用インデックス
 CREATE INDEX idx_shop_availability_status ON shop_availability(status);
+
+-- 郵便番号検索用インデックス
+CREATE INDEX idx_shops_postal_code ON shops(postal_code);
+
+-- Place ID検索用インデックス
+CREATE INDEX idx_shops_place_id ON shops(place_id);
+
+-- スタッフアクセストークン検索用インデックス
+CREATE INDEX idx_shops_staff_token ON shops(staff_access_token);
 ```
 
 #### Scenario: パフォーマンス最適化

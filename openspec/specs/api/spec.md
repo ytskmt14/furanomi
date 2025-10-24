@@ -28,6 +28,10 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
     "category": "カテゴリ",
     "latitude": 緯度,
     "longitude": 経度,
+    "postal_code": "郵便番号",
+    "formatted_address": "正規化住所",
+    "place_id": "Google Maps Place ID",
+    "geocoded_at": "Geocoding実行日時",
     "business_hours": {
       "monday": {
         "open": "17:00",
@@ -39,7 +43,7 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
         "close": "23:00"
       }
     },
-    "image_url": "画像URL",
+    "image_url": "Base64エンコード画像データ",
     "is_active": true,
     "availability_status": "available|busy|full|closed",
     "availability_updated_at": "更新日時",
@@ -47,8 +51,8 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
     "shop_manager": {
       "id": "uuid",
       "username": "ユーザー名",
-      "first_name": "名",
-      "last_name": "姓"
+      "firstName": "名",
+      "lastName": "姓"
     }
   }
 ]
@@ -224,4 +228,68 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
 - **WHEN** システム管理者が設定を更新する
 - **THEN** 変更内容がデータベースに保存される
 - **AND** 利用者アプリの動作に即座に反映される
+
+### Requirement: Geocoding API（バックエンドプロキシ経由）
+システムは住所から位置情報を自動取得できる。システムSHALL Google Maps Geocoding APIをバックエンド経由で安全に利用する。
+
+#### Endpoint: POST /api/geocoding
+- **Description**: 住所から位置情報取得
+- **Authentication**: システム管理者・店舗管理者認証必須
+- **Body**:
+```json
+{
+  "address": "福岡県福岡市東区香椎1-1-1"
+}
+```
+
+#### Response Format
+```json
+{
+  "success": true,
+  "latitude": 33.6625,
+  "longitude": 130.4444,
+  "formatted_address": "福岡県福岡市東区香椎1-1-1",
+  "place_id": "ChIJ...",
+  "postal_code": "811-3101"
+}
+```
+
+#### Scenario: 住所から位置情報取得
+- **WHEN** システム管理者または店舗管理者が住所を入力する
+- **THEN** Google Maps Geocoding APIで位置情報が取得される
+- **AND** 正規化された住所とPlace IDが返される
+- **AND** 郵便番号も自動的に取得される
+
+#### Scenario: Geocodingエラーハンドリング
+- **WHEN** Geocoding APIでエラーが発生する
+- **THEN** 適切なエラーメッセージが返される
+- **AND** 位置情報の取得に失敗した場合は手動入力が可能
+
+### Requirement: 郵便番号補完API
+システムは郵便番号から住所を自動補完できる。システムSHALL zipcloud APIを使用して郵便番号検索を提供する。
+
+#### Endpoint: GET /api/postal-code/:postalCode
+- **Description**: 郵便番号から住所取得
+- **Parameters**:
+  - `postalCode`: 郵便番号（ハイフンなし）
+
+#### Response Format
+```json
+{
+  "success": true,
+  "addresses": [
+    {
+      "prefecture": "福岡県",
+      "city": "福岡市東区",
+      "town": "香椎"
+    }
+  ]
+}
+```
+
+#### Scenario: 郵便番号補完
+- **WHEN** 利用者が郵便番号を入力する
+- **THEN** zipcloud APIで住所候補が取得される
+- **AND** 都道府県、市区町村、町域が返される
+- **AND** フロントエンドで住所入力フィールドが自動補完される
 

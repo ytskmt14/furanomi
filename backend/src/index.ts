@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
 import { authRoutes } from './routes/auth';
 import { shopRoutes } from './routes/shops';
 import { availabilityRoutes } from './routes/availability';
@@ -30,6 +33,23 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Swagger UI設定（開発環境のみ）
+if (process.env.NODE_ENV === 'development') {
+  try {
+    const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'Furanomi API Documentation',
+      customfavIcon: '/favicon.ico'
+    }));
+    console.log('📚 Swagger UI available at http://localhost:' + PORT + '/api-docs');
+  } catch (error) {
+    console.warn('⚠️  Swagger documentation not available:', error);
+  }
+} else {
+  console.log('ℹ️  Swagger UI is disabled in production (NODE_ENV=' + process.env.NODE_ENV + ')');
+}
 
 // ヘルスチェック
 app.get('/health', (req, res) => {

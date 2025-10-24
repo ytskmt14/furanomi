@@ -52,14 +52,24 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
 - **WHEN** システム管理者が新しい店舗を登録する
 - **THEN** 以下の情報を入力できる：
   - 店舗名
-  - 住所
+  - 住所（郵便番号補完機能付き）
   - 電話番号
   - メールアドレス
   - カテゴリ
-  - 緯度・経度
-  - 店舗画像
-  - 営業時間（全曜日）
+  - 緯度・経度（住所から自動取得）
+  - 店舗画像（Base64エンコード、圧縮済み）
+  - 営業時間（全曜日、日付跨ぎ対応）
 - **AND** 既存の店舗管理者を選択するか、新しい店舗管理者を作成できる
+- **AND** 住所入力時にzipcloud APIによる郵便番号補完が利用できる
+- **AND** 住所からGoogle Maps Geocoding APIで位置情報が自動取得される
+
+#### Scenario: 住所入力と位置情報取得
+- **WHEN** システム管理者が店舗の住所を入力する
+- **THEN** 郵便番号入力時に住所の自動補完が利用できる
+- **AND** 住所入力完了時にGoogle Maps Geocoding APIで位置情報が取得される
+- **AND** 正規化された住所（formatted_address）が保存される
+- **AND** Google Maps Place IDが保存される
+- **AND** Geocoding実行日時が記録される
 
 #### Scenario: 店舗編集
 - **WHEN** システム管理者が店舗情報を編集する

@@ -28,7 +28,7 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
 #### Scenario: 店舗カードレイアウト
 - **WHEN** 利用者が店舗一覧を表示する
 - **THEN** 各店舗カードに以下の情報が表示される：
-  - 店舗画像
+  - 店舗画像（Base64エンコード、圧縮済み）
   - 左上：空き状況バッジ（🟢空きあり、🟡混雑、🔴満席、⚫営業時間外）
   - 右上：距離表示（📍 134m）
   - 店舗名
@@ -43,6 +43,12 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
 - **WHEN** 利用者が店舗一覧を表示する
 - **THEN** 住所は表示されない（店舗詳細でのみ表示）
 - **AND** カテゴリアイコンは表示されない（ハッシュタグで代替）
+
+#### Scenario: ソート順序
+- **WHEN** 利用者が店舗一覧を表示する
+- **THEN** 営業中の店舗が上位、営業時間外の店舗が下位に表示される
+- **AND** 営業中の店舗は距離順でソートされる
+- **AND** 営業時間外の店舗は最後に表示される
 
 ### Requirement: 店舗詳細表示
 利用者は店舗の詳細情報を確認できる。システムSHALL営業時間を含む詳細情報をモーダルで表示する。
@@ -76,6 +82,12 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
 #### Scenario: 距離情報の非表示
 - **WHEN** 利用者が店舗詳細を表示する
 - **THEN** 現在地からの距離は表示されない（店舗一覧でのみ表示）
+
+#### Scenario: 営業時間の動的表示
+- **WHEN** 利用者が店舗詳細を表示する
+- **THEN** 現在の曜日に基づいて営業時間が動的に表示される
+- **AND** 日付跨ぎ営業時間（例：17:00-04:00 翌日）が正しく表示される
+- **AND** 営業時間が設定されていない曜日は「定休日」と表示される
 
 ### Requirement: 営業時間自動判定
 システムは営業時間に基づいて店舗の営業状況を自動判定する。システムSHALL現在時刻と営業時間を比較して営業状況を決定する。
@@ -153,6 +165,12 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
 - **THEN** 店舗詳細モーダルが表示される
 - **AND** リスト表示と同じ店舗詳細情報が表示される
 
+#### Scenario: Google Maps API統合
+- **WHEN** 地図表示機能が初期化される
+- **THEN** Google Maps JavaScript API v3が使用される
+- **AND** AdvancedMarkerElementが使用される（非推奨警告の回避）
+- **AND** フロントエンド用APIキーがHTTP referer制限で保護される
+
 ### Requirement: 表示切り替え機能
 利用者はリスト表示と地図表示を切り替えられる。システムSHALL 簡単な切り替えボタンを提供する。
 
@@ -178,4 +196,34 @@ TBD - created by archiving change add-furanomi-system. Update Purpose after arch
 - **WHEN** 利用者がタブレットで地図表示にアクセスする
 - **THEN** タブレットに最適化された地図サイズで表示される
 - **AND** より大きな画面を活用した表示
+
+### Requirement: セキュリティとAPIキー管理
+システムはGoogle Maps APIキーを安全に管理する。システムSHALL開発・本番環境でAPIキーを分離し、適切な制限を設定する。
+
+#### Scenario: APIキー分離管理
+- **WHEN** システムがGoogle Maps APIを使用する
+- **THEN** 開発環境と本番環境で異なるAPIキーが使用される
+- **AND** フロントエンド用APIキーはHTTP referer制限で保護される
+- **AND** バックエンド用APIキーはIP制限なしでGeocoding APIにアクセスする
+
+#### Scenario: Geocoding APIプロキシ
+- **WHEN** フロントエンドが住所から位置情報を取得する
+- **THEN** バックエンド経由でGeocoding APIが呼び出される
+- **AND** APIキーがフロントエンドに露出しない
+- **AND** 正規化された住所とPlace IDが返される
+
+### Requirement: 画像処理とストレージ
+システムは店舗画像を効率的に処理・保存する。システムSHALL画像の圧縮とBase64エンコードを提供する。
+
+#### Scenario: 画像圧縮
+- **WHEN** 店舗管理者が画像をアップロードする
+- **THEN** クライアントサイドで画像が圧縮される
+- **AND** 最大800x600ピクセルにリサイズされる
+- **AND** JPEG形式で品質80%で圧縮される
+
+#### Scenario: 画像ストレージ
+- **WHEN** 圧縮された画像がサーバーに送信される
+- **THEN** Base64エンコードされてデータベースに保存される
+- **AND** TEXT型カラムに保存される（VARCHAR(500)から拡張）
+- **AND** 画像プレビューが即座に表示される
 

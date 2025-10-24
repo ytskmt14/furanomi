@@ -84,6 +84,7 @@ export const ShopInfoEdit: React.FC = () => {
   const handleImageChange = (file: File | null) => {
     if (file) {
       // 画像を圧縮してからBase64エンコード
+      // 最大800x600ピクセルにリサイズし、JPEG品質80%で圧縮してBase64エンコード後のサイズを削減
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
@@ -94,6 +95,7 @@ export const ShopInfoEdit: React.FC = () => {
         const maxHeight = 600;
         let { width, height } = img;
         
+        // アスペクト比を保持しながらリサイズ
         if (width > height) {
           if (width > maxWidth) {
             height = (height * maxWidth) / width;

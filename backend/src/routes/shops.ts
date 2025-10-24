@@ -53,7 +53,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
         searchRadius = parseFloat(settingsResult.rows[0].value);
       }
     } catch (error) {
-      console.warn('Failed to fetch search radius from settings, using default:', error);
+      // デフォルト値を使用
     }
   }
 
@@ -106,6 +106,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const result = await db.query(query, params);
   
   // 営業時間に基づく自動判定関数
+  // 現在時刻と営業時間を比較し、日付跨ぎ営業にも対応
   const isWithinBusinessHours = (businessHours: any) => {
     if (!businessHours || typeof businessHours !== 'object') {
       return true; // 営業時間が設定されていない場合は営業中とみなす
@@ -125,9 +126,11 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       let isTodayOpen = false;
       if (todayHours.close_next_day) {
         // 翌日まで営業の場合（例：17:00 - 04:00）
+        // 現在時刻が営業開始時刻以降、または営業終了時刻（翌日）未満であれば営業中
         isTodayOpen = currentTime >= openTime || currentTime < closeTime;
       } else {
         // 同日営業の場合（例：08:00 - 20:00）
+        // 現在時刻が営業時間内であれば営業中
         isTodayOpen = currentTime >= openTime && currentTime < closeTime;
       }
 
@@ -138,6 +141,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     }
 
     // 今日の営業時間外の場合、前日の営業時間をチェック
+    // 前日が翌日まで営業している場合、その営業時間内かどうかを判定
     const yesterdayIndex = (now.getDay() - 1 + 7) % 7; // 前日のインデックス
     const yesterdayName = dayNames[yesterdayIndex];
     const yesterdayHours = businessHours[yesterdayName];
@@ -148,7 +152,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       const openTime = parseInt(yesterdayHours.open.replace(':', ''));
       const closeTime = parseInt(yesterdayHours.close.replace(':', ''));
       
-      // 前日の営業開始時刻以降 OR 前日の営業終了時刻（翌日の時刻）未満
+      // 前日の営業時間内（翌日まで営業）かどうかを判定
       return currentTime >= openTime || currentTime < closeTime;
     }
 

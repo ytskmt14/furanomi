@@ -1,0 +1,1526 @@
+openapi: 3.0.0
+info:
+  title: Furanomi API
+  version: 1.0.0
+  description: |
+    近くのお店の空き状況をチェックできるWebアプリケーションのAPI仕様書。
+    
+    ## 認証について
+    このAPIはJWT認証を使用します。ログインエンドポイントでHTTP-only cookieとして
+    JWTトークンが発行されます。
+    
+    ## アプリケーション構成
+    - ユーザーアプリ: 店舗検索・空き状況確認
+    - 店舗管理者アプリ: 店舗情報編集・空き状況更新
+    - システム管理者アプリ: 店舗・店舗管理者の管理
+    
+  contact:
+    name: Furanomi Support
+    url: https://github.com/ytskmt14/furanomi
+
+servers:
+  - url: http://localhost:3001/api
+    description: 開発環境
+  - url: https://api.furanomi.com/api
+    description: 本番環境
+
+tags:
+  - name: Authentication
+    description: 認証関連のエンドポイント
+  - name: Shops
+    description: 店舗管理
+  - name: Availability
+    description: 空き状況管理
+  - name: Staff
+    description: スタッフアクセス（QRコード機能）
+  - name: System
+    description: システム管理
+  - name: Geocoding
+    description: 位置情報取得
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: JWT認証トークン（HTTP-only cookie）
+
+  schemas:
+    Shop:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        name:
+          type: string
+          example: "居酒屋 ふらり"
+        description:
+          type: string
+          example: "アットホームな雰囲気の居酒屋です"
+        address:
+          type: string
+          example: "福岡県福岡市東区香椎1-1-1"
+        phone:
+          type: string
+          example: "092-123-4567"
+        email:
+          type: string
+          format: email
+          example: "info@example.com"
+        category:
+          type: string
+          enum: [izakaya, cafe, restaurant]
+          example: "izakaya"
+        latitude:
+          type: number
+          format: double
+          example: 33.6667
+        longitude:
+          type: number
+          format: double
+          example: 130.4167
+        postal_code:
+          type: string
+          example: "813-0013"
+        formatted_address:
+          type: string
+          example: "福岡県福岡市東区香椎1丁目1-1"
+        place_id:
+          type: string
+          example: "ChIJ..."
+        geocoded_at:
+          type: string
+          format: date-time
+        business_hours:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/BusinessHours'
+        image_url:
+          type: string
+          example: "data:image/jpeg;base64,..."
+        is_active:
+          type: boolean
+          example: true
+        availability_status:
+          type: string
+          enum: [available, busy, full, closed]
+          example: "available"
+        availability_updated_at:
+          type: string
+          format: date-time
+        distance:
+          type: number
+          description: 現在地からの距離（メートル）
+          example: 500
+        shop_manager:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            firstName:
+              type: string
+            lastName:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    BusinessHours:
+      type: object
+      properties:
+        open:
+          type: string
+          example: "17:00"
+        close:
+          type: string
+          example: "23:00"
+        close_next_day:
+          type: boolean
+          example: false
+
+    ShopManager:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          example: "demo"
+        email:
+          type: string
+          format: email
+          example: "manager@example.com"
+        firstName:
+          type: string
+          example: "太郎"
+        lastName:
+          type: string
+          example: "山田"
+        phone:
+          type: string
+          example: "090-1234-5678"
+        is_active:
+          type: boolean
+          example: true
+        shop:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SystemAdmin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          example: "admin"
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    SystemSettings:
+      type: object
+      properties:
+        key:
+          type: string
+          example: "search_radius"
+        value:
+          type: string
+          example: "5000"
+        description:
+          type: string
+          example: "検索半径（メートル）"
+
+    StaffAccessInfo:
+      type: object
+      properties:
+        staff_access_token:
+          type: string
+          format: uuid
+        staff_passcode:
+          type: string
+          example: "1234"
+        qr_code_url:
+          type: string
+          example: "https://furanomi.com/staff/a1b2c3d4..."
+        staff_token_created_at:
+          type: string
+          format: date-time
+
+    SystemStats:
+      type: object
+      properties:
+        totalShops:
+          type: integer
+          example: 10
+        activeShops:
+          type: integer
+          example: 8
+        totalManagers:
+          type: integer
+          example: 9
+        activeManagers:
+          type: integer
+          example: 7
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid credentials"
+
+paths:
+  /auth/shop-manager/login:
+    post:
+      tags:
+        - Authentication
+      summary: 店舗管理者ログイン
+      description: 店舗管理者の認証を行い、JWT tokenをHTTP-only cookieとして発行します
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "demo"
+                password:
+                  type: string
+                  format: password
+                  example: "demo123!\"#"
+      responses:
+        '200':
+          description: ログイン成功
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: token=abcde12345; Path=/; HttpOnly; Secure; SameSite=Strict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      username:
+                        type: string
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      role:
+                        type: string
+                        enum: [shop_manager]
+                  shop:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/system-admin/login:
+    post:
+      tags:
+        - Authentication
+      summary: システム管理者ログイン
+      description: システム管理者の認証を行い、JWT tokenをHTTP-only cookieとして発行します
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "admin"
+                password:
+                  type: string
+                  format: password
+                  example: "admin123"
+      responses:
+        '200':
+          description: ログイン成功
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      username:
+                        type: string
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      role:
+                        type: string
+                        enum: [system_admin]
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: ログアウト
+      description: JWT cookieをクリアしてログアウトします
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: ログアウト成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: 現在のユーザー情報取得
+      description: 認証済みユーザーの情報を取得します
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: ユーザー情報取得成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      username:
+                        type: string
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      role:
+                        type: string
+                        enum: [shop_manager, system_admin]
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /shops:
+    get:
+      tags:
+        - Shops
+      summary: 店舗一覧取得
+      description: |
+        店舗の一覧を取得します。位置情報、カテゴリ、空き状況でフィルタリング可能です。
+        
+        **ソート順**:
+        - 位置情報が提供された場合: 営業中の店舗を距離順、営業時間外の店舗を最後に配置
+        - 位置情報がない場合: 営業中の店舗を名前順、営業時間外の店舗を最後に配置
+      parameters:
+        - name: lat
+          in: query
+          description: 緯度
+          schema:
+            type: number
+            format: double
+            example: 33.6667
+        - name: lng
+          in: query
+          description: 経度
+          schema:
+            type: number
+            format: double
+            example: 130.4167
+        - name: radius
+          in: query
+          description: 検索半径（キロメートル）
+          schema:
+            type: number
+            example: 5
+        - name: category
+          in: query
+          description: カテゴリフィルタ
+          schema:
+            type: string
+            enum: [izakaya, cafe, restaurant]
+        - name: status
+          in: query
+          description: 空き状況フィルタ
+          schema:
+            type: string
+            enum: [available, busy, full, closed]
+      responses:
+        '200':
+          description: 店舗一覧取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Shop'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Shops
+      summary: 店舗作成
+      description: 新しい店舗を作成します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - address
+                - category
+                - latitude
+                - longitude
+                - business_hours
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                address:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                category:
+                  type: string
+                  enum: [izakaya, cafe, restaurant]
+                latitude:
+                  type: number
+                  format: double
+                longitude:
+                  type: number
+                  format: double
+                postal_code:
+                  type: string
+                formatted_address:
+                  type: string
+                place_id:
+                  type: string
+                business_hours:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/BusinessHours'
+                image_url:
+                  type: string
+                shop_manager_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: 店舗作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  shop:
+                    $ref: '#/components/schemas/Shop'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /shops/{id}:
+    get:
+      tags:
+        - Shops
+      summary: 店舗詳細取得
+      description: 指定したIDの店舗詳細を取得します
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 店舗ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 店舗詳細取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shop'
+        '404':
+          description: 店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Shops
+      summary: 店舗更新
+      description: 店舗情報を更新します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 店舗ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                address:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                category:
+                  type: string
+                latitude:
+                  type: number
+                longitude:
+                  type: number
+                postal_code:
+                  type: string
+                formatted_address:
+                  type: string
+                place_id:
+                  type: string
+                business_hours:
+                  type: object
+                image_url:
+                  type: string
+                shop_manager_id:
+                  type: string
+                  format: uuid
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: 店舗更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  shop:
+                    $ref: '#/components/schemas/Shop'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Shops
+      summary: 店舗削除
+      description: 店舗を削除します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 店舗ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 店舗削除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /shops/my-shop:
+    get:
+      tags:
+        - Shops
+      summary: 自分の店舗情報取得
+      description: ログイン中の店舗管理者が管理する店舗情報を取得します
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: 店舗情報取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shop'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /availability/{shopId}:
+    get:
+      tags:
+        - Availability
+      summary: 空き状況取得
+      description: 指定した店舗の現在の空き状況を取得します
+      parameters:
+        - name: shopId
+          in: path
+          required: true
+          description: 店舗ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 空き状況取得成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shop_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [available, busy, full, closed]
+                  updated_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: 店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Availability
+      summary: 空き状況更新
+      description: 店舗の空き状況を更新します（店舗管理者のみ）
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: shopId
+          in: path
+          required: true
+          description: 店舗ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [available, busy, full, closed]
+                  example: "available"
+      responses:
+        '200':
+          description: 空き状況更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  availability:
+                    type: object
+                    properties:
+                      shop_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                      updated_at:
+                        type: string
+                        format: date-time
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /staff/access-info/{shopId}:
+    get:
+      tags:
+        - Staff
+      summary: スタッフアクセス情報取得
+      description: 店舗のスタッフ用アクセス情報（QRコードトークンとパスコード）を取得します（店舗管理者のみ）
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: shopId
+          in: path
+          required: true
+          description: 店舗ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: アクセス情報取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffAccessInfo'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /staff/regenerate-access/{shopId}:
+    post:
+      tags:
+        - Staff
+      summary: スタッフアクセス情報再生成
+      description: 店舗のスタッフ用アクセス情報を再生成します。新しいトークンとパスコードが発行されます（店舗管理者のみ）
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: shopId
+          in: path
+          required: true
+          description: 店舗ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: アクセス情報再生成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  accessInfo:
+                    $ref: '#/components/schemas/StaffAccessInfo'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /staff/shop/{token}:
+    get:
+      tags:
+        - Staff
+      summary: トークンで店舗情報取得
+      description: QRコードのトークンを使用して店舗情報を取得します（認証不要）
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: スタッフアクセストークン
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 店舗情報取得成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shop_id:
+                    type: string
+                    format: uuid
+                  shop_name:
+                    type: string
+                  requires_passcode:
+                    type: boolean
+        '404':
+          description: トークンが無効または店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /staff/availability/{token}:
+    put:
+      tags:
+        - Staff
+      summary: スタッフによる空き状況更新
+      description: QRコードトークンとパスコードを使用して空き状況を更新します（認証不要）
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: スタッフアクセストークン
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - passcode
+                - status
+              properties:
+                passcode:
+                  type: string
+                  example: "1234"
+                  description: 4桁のパスコード
+                status:
+                  type: string
+                  enum: [available, busy, full, closed]
+                  example: "available"
+      responses:
+        '200':
+          description: 空き状況更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: string
+                  updated_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: パスコードが無効
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: トークンが無効または店舗が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /system/settings:
+    get:
+      tags:
+        - System
+      summary: システム設定取得
+      description: システム全体の設定を取得します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: 設定取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SystemSettings'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - System
+      summary: システム設定更新
+      description: システム全体の設定を更新します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - settings
+              properties:
+                settings:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      value:
+                        type: string
+              example:
+                settings:
+                  - key: "search_radius"
+                    value: "5000"
+                  - key: "max_shops_display"
+                    value: "50"
+      responses:
+        '200':
+          description: 設定更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  updatedSettings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SystemSettings'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /system/stats:
+    get:
+      tags:
+        - System
+      summary: 統計情報取得
+      description: システム全体の統計情報を取得します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: 統計情報取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStats'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /system/shop-managers:
+    get:
+      tags:
+        - System
+      summary: 店舗管理者一覧取得
+      description: すべての店舗管理者の一覧を取得します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: 店舗管理者一覧取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShopManager'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - System
+      summary: 店舗管理者作成
+      description: 新しい店舗管理者を作成します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+                - firstName
+                - lastName
+              properties:
+                username:
+                  type: string
+                  example: "new_manager"
+                password:
+                  type: string
+                  format: password
+                  example: "secure_password123"
+                email:
+                  type: string
+                  format: email
+                firstName:
+                  type: string
+                  example: "太郎"
+                lastName:
+                  type: string
+                  example: "山田"
+                phone:
+                  type: string
+                  example: "090-1234-5678"
+      responses:
+        '201':
+          description: 店舗管理者作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  manager:
+                    $ref: '#/components/schemas/ShopManager'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: ユーザー名が既に使用されています
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /system/shop-managers/{id}:
+    put:
+      tags:
+        - System
+      summary: 店舗管理者更新
+      description: 店舗管理者の情報を更新します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 店舗管理者ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                  description: 変更する場合のみ指定
+                email:
+                  type: string
+                  format: email
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phone:
+                  type: string
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: 店舗管理者更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  manager:
+                    $ref: '#/components/schemas/ShopManager'
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 店舗管理者が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - System
+      summary: 店舗管理者削除
+      description: 店舗管理者を削除します（システム管理者のみ）
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 店舗管理者ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 店舗管理者削除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 店舗管理者が見つかりません
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /geocoding:
+    post:
+      tags:
+        - Geocoding
+      summary: 住所から位置情報取得
+      description: |
+        Google Maps Geocoding APIを使用して住所から位置情報を取得します。
+        このエンドポイントはバックエンドプロキシとして機能し、APIキーをフロントエンドに露出しません。
+        （システム管理者または店舗管理者のみ）
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address
+              properties:
+                address:
+                  type: string
+                  example: "福岡県福岡市東区香椎1-1-1"
+      responses:
+        '200':
+          description: 位置情報取得成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  latitude:
+                    type: number
+                    format: double
+                    example: 33.6667
+                  longitude:
+                    type: number
+                    format: double
+                    example: 130.4167
+                  formatted_address:
+                    type: string
+                    example: "福岡県福岡市東区香椎1丁目1-1"
+                  place_id:
+                    type: string
+                    example: "ChIJ..."
+                  postal_code:
+                    type: string
+                    example: "813-0013"
+        '400':
+          description: バリデーションエラーまたはGeocoding失敗
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+        '401':
+          description: 未認証
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 権限不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
