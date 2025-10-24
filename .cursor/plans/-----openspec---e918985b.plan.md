@@ -1,124 +1,231 @@
-<!-- e918985b-acee-4171-8e21-d779cf77c2e7 8f60344e-f1c6-4007-b7ac-0e306f02f18b -->
-# Backend API Performance Optimization Plan
+<!-- e918985b-acee-4171-8e21-d779cf77c2e7 92557eed-351a-4837-b43a-5231c798c367 -->
+# Database Connection Pool Optimization Plan
 
-## Current Performance
+## Current Performance Analysis
 
-- Response time: 5.3 seconds
-- Target: 1.5 seconds or less (70% reduction)
-- Environment: Railway Trial Plan (Singapore region, 512MB RAM, 2 shared vCPU)
+**Current Response Time**: 4.10秒（平均）- 5.81秒（最悪）
 
-## Root Cause Analysis
+**Target**: 2秒以内（50%改善）
 
-### Critical Issue: Distance Calculation Executed 3 Times
+**Environment**: Railway Hobby Plan (Singapore region, 1GB RAM, dedicated vCPU)
 
-In `backend/src/routes/shops.ts`, the Haversine formula (heavy trigonometric calculations) is executed 3 times per shop:
+## Current Connection Pool Configuration
 
-1. **SELECT clause (lines 47-53)**: Calculate distance for result
-2. **WHERE clause (lines 106-112)**: Recalculate distance for filtering
-3. **ORDER BY clause (lines 121-127)**: Recalculate distance for sorting
+`backend/src/config/database.ts`:
 
-Each calculation includes: `cos()`, `sin()`, `acos()`, `radians()` - very CPU intensive.
-
-### Additional Issues
-
-- Parameters (lat, lng) are added 3 times to the array
-- Database indexes not yet applied (migration file created but not executed on Railway)
-- Shared CPU on Trial Plan amplifies the impact of redundant calculations
-
-## Implementation Strategy
-
-### Phase 1: Optimize Distance Calculation (High Priority)
-
-**File**: `backend/src/routes/shops.ts`
-
-Use PostgreSQL WITH clause (CTE) to calculate distance once and reference it:
-
-```sql
-WITH shop_distances AS (
-  SELECT 
-    s.id, s.name, s.description, s.address, s.phone, s.email, 
-    s.category, s.latitude, s.longitude, s.business_hours, 
-    s.image_url, s.is_active,
-    sa.status as availability_status, 
-    sa.updated_at as availability_updated_at,
-    (
-      6371000 * acos(
-        cos(radians($1)) * cos(radians(s.latitude)) * 
-        cos(radians(s.longitude) - radians($2)) + 
-        sin(radians($1)) * sin(radians(s.latitude))
-      )
-    ) as distance
-  FROM shops s
-  LEFT JOIN shop_availability sa ON s.id = sa.shop_id
-  WHERE s.is_active = true
-)
-SELECT * FROM shop_distances
-WHERE distance <= $3
-ORDER BY 
-  CASE WHEN availability_status = 'closed' THEN 1 ELSE 0 END ASC,
-  distance ASC
+```typescript
+max: 20                      // 最大接続数
+idleTimeoutMillis: 30000     // 30秒でアイドル接続を閉じる
+connectionTimeoutMillis: 2000 // 2秒で接続タイムアウト
 ```
 
-This reduces distance calculation from **3 times to 1 time per shop**.
+## Identified Issues
 
-### Phase 2: Apply Database Indexes (High Priority)
+### Issue 1: Connection Pool Size Too Large
 
-**File**: `backend/migrations/add_performance_indexes.sql` (already created)
+- **Current**: max: 20
+- **Problem**: Railway Hobby Planは限られたリソース（1GB RAM）
+- **Impact**: 過剰な接続数がメモリを圧迫し、逆にパフォーマンスが低下
 
-Execute the migration on Railway PostgreSQL to add:
+### Issue 2: Idle Timeout Too Long
 
-- Location index: `shops(latitude, longitude)`
-- JOIN optimization: `shop_availability(shop_id)`, `shops(shop_manager_id)`
-- Filter index: `shops(is_active)`, `shops(category, is_active)`
-- Settings index: `system_settings(key)`
+- **Current**: 30秒
+- **Problem**: 使用されていない接続が長時間保持される
+- **Impact**: リソースの無駄遣い
 
-### Phase 3: Optimize Parameter Handling
+### Issue 3: Connection Timeout Too Short
 
-Remove duplicate lat/lng parameters - use only once in the WITH clause.
+- **Current**: 2秒
+- **Problem**: Railway（シンガポール）への接続に時間がかかる場合がある
+- **Impact**: 接続タイムアウトエラーの可能性
 
-### Phase 4: Frontend Optimization (Low Priority)
+### Issue 4: Missing Configuration
 
-**File**: `frontend/src/App.tsx`
+- **min**: 最小接続数が設定されていない
+- **acquireTimeoutMillis**: クエリ実行時の接続取得タイムアウトが設定されていない
+- **keepAlive**: TCP Keep-Aliveが設定されていない
 
-Optional improvements:
+## Optimization Strategy
 
-- Reduce `enableHighAccuracy` timeout if needed
-- Optimize default search radius (currently 10km)
+### Phase 1: Optimize Pool Size (High Priority)
+
+**Railway Hobby Planに最適化された設定**:
+
+```typescript
+const dbConfig: PoolConfig = process.env.DATABASE_URL ? {
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  
+  // 接続プール設定（Railway Hobby Plan最適化）
+  min: 2,                      // 最小接続数（常に2つ保持）
+  max: 10,                     // 最大接続数（20 → 10に削減）
+  idleTimeoutMillis: 10000,    // 10秒でアイドル接続を閉じる（30秒 → 10秒）
+  connectionTimeoutMillis: 5000, // 5秒で接続タイムアウト（2秒 → 5秒）
+  acquireTimeoutMillis: 5000,  // 5秒でクエリ実行タイムアウト（新規追加）
+  
+  // TCP Keep-Alive設定（新規追加）
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000, // 10秒後にKeep-Alive開始
+} : {
+  // ローカル環境の設定も同様に最適化
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_NAME || 'furanomi',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'password',
+  ssl: false,
+  
+  min: 2,
+  max: 10,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
+  acquireTimeoutMillis: 5000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
+};
+```
+
+### Phase 2: Add Connection Pool Monitoring (Medium Priority)
+
+**追加する監視機能**:
+
+```typescript
+// 接続プール監視
+export const getPoolStats = () => {
+  return {
+    total: pool.totalCount,      // 総接続数
+    idle: pool.idleCount,        // アイドル接続数
+    waiting: pool.waitingCount,  // 待機中のクライアント数
+  };
+};
+
+// 定期的なログ出力（開発環境のみ）
+if (process.env.NODE_ENV === 'development') {
+  setInterval(() => {
+    const stats = getPoolStats();
+    console.log('📊 Pool Stats:', stats);
+  }, 30000); // 30秒ごと
+}
+```
+
+### Phase 3: Add Connection Pool Events (Low Priority)
+
+**イベントハンドラーの追加**:
+
+```typescript
+// 接続作成時
+pool.on('connect', (client) => {
+  console.log('✅ New database connection established');
+});
+
+// 接続削除時
+pool.on('remove', (client) => {
+  console.log('🗑️ Database connection removed');
+});
+
+// エラー時
+pool.on('error', (err, client) => {
+  console.error('❌ Unexpected database error:', err);
+});
+```
 
 ## Expected Performance Impact
 
-### After Phase 1 (Distance Calculation Optimization)
+### After Phase 1 (Pool Size Optimization)
 
-- **Current**: 5.3 seconds
-- **Expected**: 2.0-2.5 seconds (60% improvement)
-- **Savings**: 3.0-3.3 seconds
+**Current Issues Addressed**:
 
-### After Phase 2 (Database Indexes)
+1. メモリ使用量の削減（20接続 → 10接続）
+2. アイドル接続の迅速なクリーンアップ（30秒 → 10秒）
+3. 安定した最小接続数の維持（0 → 2）
+4. TCP Keep-Aliveによる接続の安定化
 
-- **Current**: 2.0-2.5 seconds
-- **Expected**: 1.2-1.5 seconds (additional 40-50% improvement)
-- **Savings**: 0.8-1.0 seconds
+**Expected Improvements**:
 
-### Total Expected Result
+- **Response Time**: 4.10秒 → **2.5-3.0秒**（30-40%改善）
+- **Consistency**: レスポンス時間の変動が減少
+- **Reliability**: 接続タイムアウトエラーの減少
 
-- **Final Response Time**: 1.2-1.5 seconds
-- **Total Improvement**: 70-75% faster
+### After Phase 2 (Monitoring)
+
+**Benefits**:
+
+- 接続プールの状態を可視化
+- パフォーマンスボトルネックの早期発見
+- デバッグの効率化
+
+### After Phase 3 (Event Handlers)
+
+**Benefits**:
+
+- 接続ライフサイクルの透明性向上
+- エラーの早期検出と対応
 
 ## Implementation Steps
 
-1. Rewrite shop search query to use WITH clause for single distance calculation
-2. Fix parameter handling to avoid duplication
-3. Connect to Railway PostgreSQL and execute index migration
-4. Test in local environment
-5. Deploy to Railway
-6. Measure production performance
-7. Update backlog (mark TASK-012 as completed)
+1. `backend/src/config/database.ts`の接続プール設定を最適化
+2. 接続プール監視機能を追加
+3. イベントハンドラーを追加
+4. ローカル環境でテスト
+5. Railway本番環境にデプロイ
+6. パフォーマンステストを実行（複数回）
+7. 接続プール統計を確認
+8. 必要に応じて微調整
 
-## Notes
+## Rationale for Settings
 
-- Railway region (Singapore) is optimal for Japan access - no need to change
-- Trial Plan resources are limited but sufficient after query optimization
-- The main bottleneck is algorithmic (3x redundant calculations), not infrastructure
+### min: 2
+
+- 常に2つの接続を保持することで、初回リクエストの接続確立時間を削減
+- Railway Hobby Planのリソースに適した最小値
+
+### max: 10
+
+- 20接続は1GB RAMには過剰
+- 10接続で十分な並行処理が可能
+- メモリ使用量を削減
+
+### idleTimeoutMillis: 10000
+
+- 10秒で十分（使用頻度が低い接続を迅速に解放）
+- リソースの効率的な利用
+
+### connectionTimeoutMillis: 5000
+
+- Railway（シンガポール）への接続に十分な時間
+- 2秒では短すぎる可能性
+
+### acquireTimeoutMillis: 5000
+
+- クエリ実行時の接続取得に十分な時間
+- タイムアウトエラーを防ぐ
+
+### keepAlive: true
+
+- TCP接続を維持し、再接続のオーバーヘッドを削減
+- Railway環境で特に有効
+
+## Risk Assessment
+
+**Low Risk**:
+
+- 接続プール設定の変更は後方互換性がある
+- 既存の機能に影響しない
+- ロールバックが容易
+
+**Testing Required**:
+
+- ローカル環境で動作確認
+- 本番環境で段階的にテスト
+- 複数回のパフォーマンステスト
+
+## Success Criteria
+
+- [ ] レスポンス時間が2.5-3.0秒以内に安定
+- [ ] 接続タイムアウトエラーが発生しない
+- [ ] 接続プール統計が適切な値を示す
+- [ ] メモリ使用量が削減される
+- [ ] レスポンス時間の変動が減少する
 
 ### To-dos
 
