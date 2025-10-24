@@ -301,16 +301,17 @@ git push origin main
 
 ## 受け入れ基準
 
-- [ ] 全てのalert()が削除されている（10箇所）
-- [ ] トースト通知コンポーネントが実装されている
-- [ ] 成功時に適切なトースト通知が表示される
-- [ ] エラー時に赤いトースト通知が表示される
-- [ ] モバイルで適切に表示される
-- [ ] アクセシビリティに配慮されている
-- [ ] デスクトップとモバイルで表示位置が適切
-- [ ] 複数のトーストが同時に表示可能
-- [ ] ビルドエラーがない
-- [ ] 全ての機能が正常に動作する
+- [x] 全てのalert()が削除されている（10箇所）
+- [x] トースト通知コンポーネントが実装されている
+- [x] 成功時に適切なトースト通知が表示される
+- [x] エラー時に赤いトースト通知が表示される
+- [x] 情報時に青いトースト通知が表示される
+- [x] モバイルで適切に表示される
+- [x] アクセシビリティに配慮されている
+- [x] デスクトップとモバイルで表示位置が適切
+- [x] 複数のトーストが同時に表示可能
+- [x] ビルドエラーがない
+- [x] 全ての機能が正常に動作する
 
 ## 対象ファイル一覧
 
@@ -325,16 +326,18 @@ git push origin main
 
 ### To-dos
 
-- [ ] @radix-ui/react-toastをインストール
-- [ ] frontend/src/components/ui/toast.tsxを作成
-- [ ] frontend/src/components/ui/toaster.tsxを作成
-- [ ] frontend/src/hooks/use-toast.tsを作成
-- [ ] App.tsxにToasterコンポーネントを追加
-- [ ] StaffAvailabilityUpdate.tsxのalert()を置き換え（1箇所）
-- [ ] ShopInfoEdit.tsxのalert()を置き換え（2箇所）
-- [ ] AvailabilityUpdate.tsxのalert()を置き換え（7箇所）
-- [ ] フロントエンドのビルド確認
-- [ ] 全機能の動作確認
-- [ ] バックログからTASK-001を削除
-- [ ] Gitコミット
-- [ ] GitHubへプッシュしてデプロイ
+- [x] @radix-ui/react-toastをインストール
+- [x] frontend/src/components/ui/toast.tsxを作成
+- [x] frontend/src/components/ui/toaster.tsxを作成
+- [x] frontend/src/hooks/use-toast.tsを作成
+- [x] App.tsxにToasterコンポーネントを追加
+- [x] StaffAvailabilityUpdate.tsxのalert()を置き換え（1箇所）
+- [x] ShopInfoEdit.tsxのalert()を置き換え（2箇所）
+- [x] AvailabilityUpdate.tsxのalert()を置き換え（7箇所）
+- [x] フロントエンドのビルド確認
+- [x] 全機能の動作確認
+- [x] バックログからTASK-001を削除
+- [x] Gitコミット
+- [x] GitHubへプッシュしてデプロイ
+- [x] 仕様書にトースト通知システムを反映
+- [x] 計画ファイルのステータス更新
