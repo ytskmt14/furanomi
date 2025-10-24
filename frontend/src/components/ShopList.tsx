@@ -69,7 +69,6 @@ export const ShopList: React.FC<ShopListProps> = ({ shops, onShopSelect }) => {
                 src={shop.image_url || `https://via.placeholder.com/400x300?text=${encodeURIComponent(shop.name)}`}
                 alt={shop.name}
                 className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-                placeholder={`https://via.placeholder.com/400x300/f3f4f6/9ca3af?text=${encodeURIComponent(shop.name)}`}
               />
               {/* 空き状況バッジ（左上） */}
               <div className="absolute top-4 left-4 z-10">
