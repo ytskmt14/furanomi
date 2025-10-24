@@ -85,6 +85,7 @@ export const StaffAvailabilityUpdate: React.FC = () => {
       toast({
         title: "更新完了",
         description: "空き状況を更新しました！",
+        variant: "success",
       });
     } catch (err) {
       console.error('Update error:', err);

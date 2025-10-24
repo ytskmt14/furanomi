@@ -120,6 +120,7 @@ export const AvailabilityUpdate: React.FC = () => {
       toast({
         title: "更新完了",
         description: "空き状況を更新しました！",
+        variant: "success",
       });
     } catch (error) {
       console.error('Update error:', error);
@@ -144,6 +145,7 @@ export const AvailabilityUpdate: React.FC = () => {
       toast({
         title: "再発行完了",
         description: "QRコードを再発行しました！",
+        variant: "success",
       });
     } catch (error) {
       console.error('Regenerate error:', error);
@@ -168,6 +170,7 @@ export const AvailabilityUpdate: React.FC = () => {
       toast({
         title: "再生成完了",
         description: "合言葉を再生成しました！",
+        variant: "success",
       });
     } catch (error) {
       console.error('Regenerate error:', error);
@@ -345,6 +348,7 @@ export const AvailabilityUpdate: React.FC = () => {
                     navigator.clipboard.writeText(`${window.location.origin}/staff/availability?token=${staffAccessInfo?.staff_access_token || ''}`);
                     toast({
                       description: "URLをコピーしました",
+                      variant: "success",
                     });
                   }}
                 >

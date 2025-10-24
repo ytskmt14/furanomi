@@ -163,6 +163,7 @@ export const ShopInfoEdit: React.FC = () => {
       toast({
         title: "保存完了",
         description: "店舗情報を保存しました！",
+        variant: "success",
       });
     } catch (error) {
       console.error('Save error:', error);
