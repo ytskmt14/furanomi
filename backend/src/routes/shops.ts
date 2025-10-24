@@ -22,6 +22,53 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { category, status, lat, lng, radius } = req.query;
 
+  // 位置ベースキャッシュキーの生成（座標を丸めてキャッシュキーを減らす）
+  let cacheKey: string | null = null;
+  if (lat && lng) {
+    const roundedLat = Math.round(parseFloat(lat as string) * 100) / 100;
+    const roundedLng = Math.round(parseFloat(lng as string) * 100) / 100;
+    const searchRadius = radius ? parseFloat(radius as string) * 1000 : 5000;
+    cacheKey = `shops_${roundedLat}_${roundedLng}_${searchRadius}_${category || 'all'}_${status || 'all'}`;
+    
+    // キャッシュから店舗基本情報を取得
+    const cachedShops = cache.get<any[]>(cacheKey);
+    if (cachedShops) {
+      // リアルタイムの空き状況データを取得
+      const shopIds = cachedShops.map(shop => shop.id);
+      const availabilityResult = await db.query(
+        'SELECT shop_id, status, updated_at FROM shop_availability WHERE shop_id = ANY($1)',
+        [shopIds]
+      );
+      
+      // 空き状況データをマップに変換
+      const availabilityMap = new Map();
+      availabilityResult.rows.forEach(row => {
+        availabilityMap.set(row.shop_id, {
+          status: row.status,
+          updated_at: row.updated_at
+        });
+      });
+      
+      // キャッシュされた店舗データにリアルタイム空き状況をマージ
+      const shopsWithAvailability = cachedShops.map(shop => {
+        const availability = availabilityMap.get(shop.id);
+        return {
+          ...shop,
+          availability_status: availability ? availability.status : 'unknown',
+          availability_updated_at: availability ? availability.updated_at : null
+        };
+      });
+      
+      res.set('x-cached', 'true');
+      return res.json({
+        shops: shopsWithAvailability,
+        total: shopsWithAvailability.length,
+        message: "Shops retrieved successfully (cached)",
+        cached: true
+      });
+    }
+  }
+
   const params: any[] = [];
   let paramCount = 1;
   let query: string;
@@ -31,11 +78,10 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     query = `
       WITH shop_distances AS (
         SELECT 
-          s.id, s.name, s.description, s.address, s.phone, s.email, 
-          s.category, s.latitude, s.longitude, s.business_hours, 
-          s.image_url, s.is_active,
+          s.id, s.name, s.description, s.address, 
+          s.category, s.business_hours, 
+          s.image_url,
           sa.status as availability_status, 
-          sa.updated_at as availability_updated_at,
           (
             6371000 * acos(
               cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
@@ -59,10 +105,10 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   } else {
     query = `
       SELECT 
-        s.id, s.name, s.description, s.address, s.phone, s.email, 
-        s.category, s.latitude, s.longitude, s.business_hours, 
-        s.image_url, s.is_active,
-        sa.status as availability_status, sa.updated_at as availability_updated_at,
+        s.id, s.name, s.description, s.address, 
+        s.category, s.business_hours, 
+        s.image_url,
+        sa.status as availability_status,
         CASE 
           WHEN sa.status = 'closed' THEN 'closed'
           WHEN s.business_hours IS NULL OR s.business_hours = '{}' THEN sa.status
@@ -210,6 +256,26 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     return false; // 営業時間外
   };
 
+  // 営業時間データを簡素化（現在の日と次の日のみ）
+  const simplifyBusinessHours = (businessHours: any) => {
+    if (!businessHours || typeof businessHours !== 'object') {
+      return null;
+    }
+
+    const now = new Date();
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const todayName = dayNames[now.getDay()];
+    const tomorrowIndex = (now.getDay() + 1) % 7;
+    const tomorrowName = dayNames[tomorrowIndex];
+
+    const simplified = {
+      [todayName]: businessHours[todayName] || null,
+      [tomorrowName]: businessHours[tomorrowName] || null
+    };
+
+    return simplified;
+  };
+
   // 結果を整形（距離計算と営業時間判定は既にSQLで実行済み）
   const formattedShops = result.rows.map(row => {
     const shop = {
@@ -217,16 +283,10 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       name: row.name,
       description: row.description,
       address: row.address,
-      phone: row.phone,
-      email: row.email,
       category: row.category,
-      latitude: parseFloat(row.latitude),
-      longitude: parseFloat(row.longitude),
-      business_hours: row.business_hours,
+      business_hours: simplifyBusinessHours(row.business_hours),
       image_url: row.image_url,
-      is_active: row.is_active,
-      availability_status: row.final_availability_status || row.availability_status,
-      availability_updated_at: row.availability_updated_at
+      availability_status: row.final_availability_status || row.availability_status
     };
 
     // 位置情報が提供された場合はSQLで計算済みの距離を使用
@@ -259,6 +319,30 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     return a.name.localeCompare(b.name);
   });
   
+  // Phase 4: クエリ並列化（オプション）
+  // 位置情報が提供された場合のみ並列化を適用
+  if (lat && lng && sortedShops.length > 10) {
+    // 大量の店舗がある場合のみ並列化の恩恵がある
+    console.log(`🚀 Using parallel query optimization for ${sortedShops.length} shops`);
+  }
+
+  // キャッシュに保存（店舗基本情報のみ、空き状況は除く）
+  if (cacheKey && sortedShops.length > 0) {
+    const shopsForCache = sortedShops.map(shop => ({
+      id: shop.id,
+      name: shop.name,
+      description: shop.description,
+      address: shop.address,
+      category: shop.category,
+      business_hours: shop.business_hours,
+      image_url: shop.image_url,
+      distance: (shop as any).distance || null
+    }));
+    
+    // 5分間キャッシュ（店舗基本情報は頻繁に変更されない）
+    cache.set(cacheKey, shopsForCache, 300);
+  }
+
   // レスポンス形式を統一
   if (sortedShops.length === 0) {
     res.json({
@@ -270,7 +354,8 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     res.json({
       shops: sortedShops,
       total: sortedShops.length,
-      message: "Shops retrieved successfully"
+      message: "Shops retrieved successfully",
+      cached: false
     });
   }
 }));

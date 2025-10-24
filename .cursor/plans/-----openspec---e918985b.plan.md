@@ -1,231 +1,310 @@
-<!-- e918985b-acee-4171-8e21-d779cf77c2e7 92557eed-351a-4837-b43a-5231c798c367 -->
-# Database Connection Pool Optimization Plan
+<!-- e918985b-acee-4171-8e21-d779cf77c2e7 5be822a5-dc25-4eda-971f-e3450ff63508 -->
+# Shops API Further Performance Optimization Plan
 
 ## Current Performance Analysis
 
-**Current Response Time**: 4.10秒（平均）- 5.81秒（最悪）
+**Current Response Time**: 226ms (server processing) + 119ms (data transfer) = 345ms total
 
-**Target**: 2秒以内（50%改善）
+**Target**: 150ms (server processing) + 60ms (data transfer) = **210ms or less**
 
-**Environment**: Railway Hobby Plan (Singapore region, 1GB RAM, dedicated vCPU)
+**Improvement Goal**: 40% reduction
 
-## Current Connection Pool Configuration
+## Current Status
 
-`backend/src/config/database.ts`:
+**Already Optimized**:
 
-```typescript
-max: 20                      // 最大接続数
-idleTimeoutMillis: 30000     // 30秒でアイドル接続を閉じる
-connectionTimeoutMillis: 2000 // 2秒で接続タイムアウト
-```
+- Distance calculation: 3 times → 1 time (WITH clause)
+- Database indexes: Applied
+- Business hours logic: Moved to SQL
+- Connection pool: Optimized (10 connections, keepAlive enabled)
 
-## Identified Issues
+## Phase 1: Response Data Optimization (Low Difficulty - Immediate Effect)
 
-### Issue 1: Connection Pool Size Too Large
+### 1.1 Remove Unnecessary Fields
 
-- **Current**: max: 20
-- **Problem**: Railway Hobby Planは限られたリソース（1GB RAM）
-- **Impact**: 過剰な接続数がメモリを圧迫し、逆にパフォーマンスが低下
-
-### Issue 2: Idle Timeout Too Long
-
-- **Current**: 30秒
-- **Problem**: 使用されていない接続が長時間保持される
-- **Impact**: リソースの無駄遣い
-
-### Issue 3: Connection Timeout Too Short
-
-- **Current**: 2秒
-- **Problem**: Railway（シンガポール）への接続に時間がかかる場合がある
-- **Impact**: 接続タイムアウトエラーの可能性
-
-### Issue 4: Missing Configuration
-
-- **min**: 最小接続数が設定されていない
-- **acquireTimeoutMillis**: クエリ実行時の接続取得タイムアウトが設定されていない
-- **keepAlive**: TCP Keep-Aliveが設定されていない
-
-## Optimization Strategy
-
-### Phase 1: Optimize Pool Size (High Priority)
-
-**Railway Hobby Planに最適化された設定**:
+**Current Response**:
 
 ```typescript
-const dbConfig: PoolConfig = process.env.DATABASE_URL ? {
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  
-  // 接続プール設定（Railway Hobby Plan最適化）
-  min: 2,                      // 最小接続数（常に2つ保持）
-  max: 10,                     // 最大接続数（20 → 10に削減）
-  idleTimeoutMillis: 10000,    // 10秒でアイドル接続を閉じる（30秒 → 10秒）
-  connectionTimeoutMillis: 5000, // 5秒で接続タイムアウト（2秒 → 5秒）
-  acquireTimeoutMillis: 5000,  // 5秒でクエリ実行タイムアウト（新規追加）
-  
-  // TCP Keep-Alive設定（新規追加）
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 10000, // 10秒後にKeep-Alive開始
-} : {
-  // ローカル環境の設定も同様に最適化
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'furanomi',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
-  ssl: false,
-  
-  min: 2,
-  max: 10,
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 5000,
-  acquireTimeoutMillis: 5000,
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 10000,
-};
-```
-
-### Phase 2: Add Connection Pool Monitoring (Medium Priority)
-
-**追加する監視機能**:
-
-```typescript
-// 接続プール監視
-export const getPoolStats = () => {
-  return {
-    total: pool.totalCount,      // 総接続数
-    idle: pool.idleCount,        // アイドル接続数
-    waiting: pool.waitingCount,  // 待機中のクライアント数
-  };
-};
-
-// 定期的なログ出力（開発環境のみ）
-if (process.env.NODE_ENV === 'development') {
-  setInterval(() => {
-    const stats = getPoolStats();
-    console.log('📊 Pool Stats:', stats);
-  }, 30000); // 30秒ごと
+{
+  id, name, description, address, phone, email, 
+  category, latitude, longitude, business_hours, 
+  image_url, is_active, availability_status, 
+  availability_updated_at, distance
 }
 ```
 
-### Phase 3: Add Connection Pool Events (Low Priority)
-
-**イベントハンドラーの追加**:
+**Optimized Response** (remove unused fields):
 
 ```typescript
-// 接続作成時
-pool.on('connect', (client) => {
-  console.log('✅ New database connection established');
-});
-
-// 接続削除時
-pool.on('remove', (client) => {
-  console.log('🗑️ Database connection removed');
-});
-
-// エラー時
-pool.on('error', (err, client) => {
-  console.error('❌ Unexpected database error:', err);
-});
+{
+  id, name, description, address, category,
+  image_url, availability_status, distance,
+  business_hours // Keep but consider simplification
+}
 ```
 
-## Expected Performance Impact
+**Fields to Remove**:
 
-### After Phase 1 (Pool Size Optimization)
+- `phone` - Not displayed in list view
+- `email` - Not displayed in list view
+- `latitude` - Only used for distance calculation (already done)
+- `longitude` - Only used for distance calculation
+- `is_active` - Already filtered in WHERE clause
+- `availability_updated_at` - Not displayed in list view
 
-**Current Issues Addressed**:
+**Expected Effect**: Response size -30%, Transfer time 119ms → **80ms**
 
-1. メモリ使用量の削減（20接続 → 10接続）
-2. アイドル接続の迅速なクリーンアップ（30秒 → 10秒）
-3. 安定した最小接続数の維持（0 → 2）
-4. TCP Keep-Aliveによる接続の安定化
+### 1.2 Simplify Business Hours Data
 
-**Expected Improvements**:
+**Current**: Full JSONB object with all days
 
-- **Response Time**: 4.10秒 → **2.5-3.0秒**（30-40%改善）
-- **Consistency**: レスポンス時間の変動が減少
-- **Reliability**: 接続タイムアウトエラーの減少
+**Optimized**: Only return current day + next day (for close_next_day logic)
 
-### After Phase 2 (Monitoring)
+**Expected Effect**: Response size -20%, Transfer time 80ms → **60ms**
 
-**Benefits**:
+### 1.3 Enable Gzip Compression
 
-- 接続プールの状態を可視化
-- パフォーマンスボトルネックの早期発見
-- デバッグの効率化
+**Check if already enabled in Express**:
 
-### After Phase 3 (Event Handlers)
+```typescript
+import compression from 'compression';
+app.use(compression());
+```
 
-**Benefits**:
+**Expected Effect**: If not enabled, response size -70%
 
-- 接続ライフサイクルの透明性向上
-- エラーの早期検出と対応
+## Phase 2: Query Result Caching (Medium Difficulty - High Effect)
 
-## Implementation Steps
+### 2.1 Implement Location-Based Cache
 
-1. `backend/src/config/database.ts`の接続プール設定を最適化
-2. 接続プール監視機能を追加
-3. イベントハンドラーを追加
-4. ローカル環境でテスト
-5. Railway本番環境にデプロイ
-6. パフォーマンステストを実行（複数回）
-7. 接続プール統計を確認
-8. 必要に応じて微調整
+**Cache Strategy**:
 
-## Rationale for Settings
+```typescript
+// Round coordinates to reduce cache keys
+const cacheKey = `shops_${Math.round(lat * 100) / 100}_${Math.round(lng * 100) / 100}_${radius}`;
 
-### min: 2
+// Cache shop basic info (excluding availability)
+const cachedShops = cache.get<Shop[]>(cacheKey);
 
-- 常に2つの接続を保持することで、初回リクエストの接続確立時間を削減
-- Railway Hobby Planのリソースに適した最小値
+if (cachedShops) {
+  // Merge with real-time availability data
+  const availability = await getRealtimeAvailability(cachedShops.map(s => s.id));
+  return mergeShopsWithAvailability(cachedShops, availability);
+}
+```
 
-### max: 10
+**Cache Configuration**:
 
-- 20接続は1GB RAMには過剰
-- 10接続で十分な並行処理が可能
-- メモリ使用量を削減
+- **Shop basic info**: 5 minutes (infrequently changed)
+- **Availability status**: No cache (real-time)
+- **System settings**: Already cached (5 minutes)
 
-### idleTimeoutMillis: 10000
+**Expected Effect**:
 
-- 10秒で十分（使用頻度が低い接続を迅速に解放）
-- リソースの効率的な利用
+- First request: 226ms (no change)
+- Subsequent requests: **50-80ms** (70% reduction)
 
-### connectionTimeoutMillis: 5000
+### 2.2 Implement Redis for Distributed Cache (Optional)
 
-- Railway（シンガポール）への接続に十分な時間
-- 2秒では短すぎる可能性
+**Only if multiple Railway instances**:
 
-### acquireTimeoutMillis: 5000
+- Use Redis for shared cache across instances
+- Railway Hobby Plan supports Redis add-on
 
-- クエリ実行時の接続取得に十分な時間
-- タイムアウトエラーを防ぐ
+**Expected Effect**: Consistent cache across all instances
 
-### keepAlive: true
+## Phase 3: PostgreSQL Configuration Optimization (Medium Difficulty - Medium Effect)
 
-- TCP接続を維持し、再接続のオーバーヘッドを削減
-- Railway環境で特に有効
+### 3.1 Optimize Railway PostgreSQL Settings
+
+**Check Current Settings**:
+
+```sql
+SHOW shared_buffers;
+SHOW effective_cache_size;
+SHOW work_mem;
+```
+
+**Recommended Settings for Railway Hobby Plan (1GB RAM)**:
+
+```sql
+-- Railway may have these optimized already
+-- Check and request Railway support if needed
+```
+
+**Expected Effect**: Query execution -10-15%, 226ms → **190-200ms**
+
+### 3.2 Add Query-Specific Indexes (If Missing)
+
+**Check existing indexes**:
+
+```sql
+SELECT indexname, indexdef 
+FROM pg_indexes 
+WHERE tablename IN ('shops', 'shop_availability');
+```
+
+**Add composite index if not exists**:
+
+```sql
+-- For distance + status filtering
+CREATE INDEX IF NOT EXISTS idx_shops_location_active 
+ON shops(latitude, longitude, is_active) 
+WHERE is_active = true;
+```
+
+**Expected Effect**: Query execution -5-10%
+
+## Phase 4: Query Parallelization (High Difficulty - High Effect)
+
+### 4.1 Split Query into Parallel Execution
+
+**Current**: Single query with all JOINs
+
+**Optimized**: Parallel queries + merge in application
+
+```typescript
+const [shopsData, availabilityData] = await Promise.all([
+  db.query(shopsQuery),      // Shop basic info
+  db.query(availabilityQuery) // Availability status
+]);
+
+// Merge results in Node.js
+const mergedShops = mergeShopsWithAvailability(shopsData, availabilityData);
+```
+
+**Expected Effect**: -20-30% if I/O bound, 226ms → **160-180ms**
+
+**Risk**: Increased complexity, two database round trips
+
+## Phase 5: Advanced Optimization (Optional - Future)
+
+### 5.1 Materialized View
+
+**Create pre-computed view**:
+
+```sql
+CREATE MATERIALIZED VIEW shop_search_view AS
+SELECT s.*, sa.status, sa.updated_at as availability_updated_at
+FROM shops s
+LEFT JOIN shop_availability sa ON s.id = sa.shop_id
+WHERE s.is_active = true;
+
+-- Refresh every 5 minutes
+CREATE OR REPLACE FUNCTION refresh_shop_search_view()
+RETURNS void AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW CONCURRENTLY shop_search_view;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Expected Effect**: -50% or more
+
+**Trade-off**: 5-minute delay for shop updates
+
+### 5.2 PostGIS Extension for Geo Queries
+
+**Install PostGIS** (if Railway supports):
+
+```sql
+CREATE EXTENSION postgis;
+
+-- Use PostGIS geography type
+ALTER TABLE shops ADD COLUMN location GEOGRAPHY(POINT, 4326);
+UPDATE shops SET location = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326);
+
+-- Spatial index
+CREATE INDEX idx_shops_location_gist ON shops USING GIST(location);
+```
+
+**Expected Effect**: Distance calculation -60-70%
+
+## Implementation Roadmap
+
+### Week 1: Quick Wins
+
+1. Phase 1.1: Remove unnecessary fields
+2. Phase 1.2: Simplify business hours
+3. Phase 1.3: Enable Gzip compression
+4. **Goal**: 226ms → **180ms**
+
+### Week 2: Caching
+
+1. Phase 2.1: Location-based cache
+2. Test cache effectiveness
+3. **Goal**: 180ms → **50-80ms** (cached)
+
+### Week 3: Database Optimization
+
+1. Phase 3.1: PostgreSQL settings review
+2. Phase 3.2: Additional indexes
+3. **Goal**: 180ms → **160ms** (uncached)
+
+### Week 4: Advanced (Optional)
+
+1. Phase 4.1: Query parallelization
+2. Evaluate Phase 5 options
+3. **Goal**: 160ms → **120-140ms**
+
+## Expected Final Results
+
+| Metric | Current | After Phase 1 | After Phase 2 | After Phase 3 | Target |
+
+|--------|---------|---------------|---------------|---------------|--------|
+
+| Server Processing | 226ms | 180ms | 50-80ms (cached) | 160ms (uncached) | 150ms |
+
+| Data Transfer | 119ms | 60ms | 60ms | 60ms | 60ms |
+
+| **Total** | **345ms** | **240ms** | **110-140ms** | **220ms** | **210ms** |
+
+**First Request**: 220ms (36% improvement)
+
+**Cached Request**: 110-140ms (60-68% improvement)
 
 ## Risk Assessment
 
 **Low Risk**:
 
-- 接続プール設定の変更は後方互換性がある
-- 既存の機能に影響しない
-- ロールバックが容易
+- Phase 1: Response field removal (ensure frontend compatibility)
+- Phase 2: Caching (ensure cache invalidation works)
 
-**Testing Required**:
+**Medium Risk**:
 
-- ローカル環境で動作確認
-- 本番環境で段階的にテスト
-- 複数回のパフォーマンステスト
+- Phase 3: Database settings (test thoroughly)
+- Phase 4: Query parallelization (increased complexity)
+
+**High Risk**:
+
+- Phase 5: Materialized views (data freshness trade-off)
+- Phase 5: PostGIS (requires Railway support)
 
 ## Success Criteria
 
-- [ ] レスポンス時間が2.5-3.0秒以内に安定
-- [ ] 接続タイムアウトエラーが発生しない
-- [ ] 接続プール統計が適切な値を示す
-- [ ] メモリ使用量が削減される
-- [ ] レスポンス時間の変動が減少する
+- [ ] Phase 1: Server processing time < 180ms
+- [ ] Phase 2: Cached response time < 140ms
+- [ ] Phase 3: Uncached response time < 160ms
+- [ ] No functionality regression
+- [ ] Cache hit rate > 70%
+- [ ] Real-time availability maintained
+
+## Monitoring
+
+**Metrics to Track**:
+
+1. Average response time (uncached)
+2. Average response time (cached)
+3. Cache hit rate
+4. Database query execution time
+5. Memory usage
+6. Error rate
+
+**Tools**:
+
+- Chrome DevTools Network tab
+- Railway metrics dashboard
+- Custom logging in Express middleware
 
 ### To-dos
 

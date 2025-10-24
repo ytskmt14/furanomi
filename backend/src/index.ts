@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
@@ -12,6 +13,7 @@ import { systemRoutes } from './routes/system';
 import staffRoutes from './routes/staff';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
+import { performanceMiddleware, getPerformanceStats } from './middleware/performance';
 
 // 環境変数の読み込み
 dotenv.config();
@@ -20,6 +22,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ミドルウェアの設定
+app.use(compression()); // Gzip圧縮を有効化
+app.use(performanceMiddleware); // パフォーマンス監視
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -55,6 +59,12 @@ if (process.env.NODE_ENV === 'development') {
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+// パフォーマンス統計（開発環境のみ）
+if (process.env.NODE_ENV === 'development') {
+  app.get('/performance', getPerformanceStats);
+  console.log('📊 Performance stats available at http://localhost:' + PORT + '/performance');
+}
 
 // API ルート
 app.use('/api/auth', authRoutes);
