@@ -1,10 +1,48 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    
+    <!-- TDK設定 -->
+    <title>ふらのみ - 近くの店舗の空き状況を確認</title>
+    <meta name="description" content="居酒屋・カフェ・レストランの空き状況をリアルタイムで確認。混雑状況を見てからお店を選べます。" />
+    <meta name="keywords" content="居酒屋,カフェ,レストラン,空き状況,混雑,リアルタイム,ふらのみ" />
+    
+    <!-- OGP設定（基本） -->
+    <meta property="og:title" content="ふらのみ - 近くの店舗の空き状況を確認" />
+    <meta property="og:description" content="居酒屋・カフェ・レストランの空き状況をリアルタイムで確認。混雑状況を見てからお店を選べます。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://furanomi.com" />
+    <meta property="og:site_name" content="ふらのみ" />
+    <meta property="og:locale" content="ja_JP" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="ふらのみ - 近くの店舗の空き状況を確認" />
+    <meta name="twitter:description" content="居酒屋・カフェ・レストランの空き状況をリアルタイムで確認。" />
+    
+    <!-- その他のメタタグ -->
+    <meta name="author" content="ふらのみ" />
+    <meta name="theme-color" content="#ffffff" />
+    
+    <!-- 構造化データ（JSON-LD） -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "ふらのみ",
+      "url": "https://furanomi.com",
+      "description": "居酒屋・カフェ・レストランの空き状況をリアルタイムで確認できるサービス",
+      "inLanguage": "ja",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://furanomi.com?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
