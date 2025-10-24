@@ -115,6 +115,14 @@ npm run dev
 - 店舗管理者の管理
 - システム設定
 
+## 開発バックログ
+
+機能追加や改善のタスクは[openspec/backlog.md](./openspec/backlog.md)で管理しています。
+
+- 📋 優先度別タスク一覧
+- 🎯 開発フローとの連携
+- ✅ 完了タスクは削除（履歴はGitで追跡）
+
 ## API仕様書
 
 API仕様書はSwagger/OpenAPI 3.0形式で提供されています。
