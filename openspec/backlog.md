@@ -41,25 +41,6 @@ git log --all --grep="TASK-XXX"
 
 ### 🟢 優先度: 低（将来的に対応したい）
 
-#### TASK-006: 利用者アプリのSEO対策
-
-- **カテゴリ**: Improvement (SEO)
-- **優先度**: 🟢 低
-- **工数見積**: 中(3-5h)
-- **ステータス**: 🚧 進行中
-- **OpenSpec Change**: 不要
-- **説明**: 利用者アプリのSEOを最適化し、検索エンジンでの表示を改善する
-- **対象**:
-  - メタタグ（title, description, OGP）の最適化
-  - 構造化データの追加
-  - sitemap.xmlの生成
-  - robots.txtの設定
-- **受け入れ基準**:
-  - [ ] 適切なメタタグが設定されている
-  - [ ] OGP画像が設定されている
-  - [ ] sitemap.xmlが生成されている
-  - [ ] Lighthouse SEOスコア90以上
-
 #### TASK-007: 店舗管理者アプリのSEO対策
 
 - **カテゴリ**: Improvement (SEO)
@@ -140,7 +121,6 @@ git log --all --grep="TASK-XXX"
 
 ### 🎨 UX/UI改善（Improvements）
 
-- TASK-006: 利用者アプリのSEO対策
 - TASK-007: 店舗管理者アプリのSEO対策
 - TASK-008: システム管理者アプリのSEO対策
 - TASK-009: エラーメッセージの詳細化

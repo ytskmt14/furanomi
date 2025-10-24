@@ -1,343 +1,163 @@
-<!-- e918985b-acee-4171-8e21-d779cf77c2e7 bb04cadb-1a01-43ec-8136-20ab2ea40c98 -->
-# TASK-001: アプリケーション全体のalert()をトースト通知に置き換え
+<!-- e918985b-acee-4171-8e21-d779cf77c2e7 e09ecb49-6a3b-4786-aa65-9ed6c6ac5383 -->
+# TASK-006: 利用者アプリのSEO対策
 
-## Overview
+## 実装方針（推奨案を採用）
 
-アプリケーション全体で使用されているブラウザネイティブの`alert()`を、よりモダンでユーザーフレンドリーなトースト通知に置き換えます。
+1. TDK設定: index.htmlに静的に設定（シンプル、利用者アプリは1ページなので十分）
+2. OGP画像: 今回はスキップ（後で追加）
+3. 構造化データ: 基本的なWebサイト情報のみ
+4. sitemap.xml: 手動で作成（静的なURL構成のため）
 
-## 調査結果: alert()使用箇所の全量
+## 実装内容
 
-### 1. StaffAvailabilityUpdate.tsx（1箇所）
+### 1. TDK設定（index.html）
 
-- **行83**: 空き状況更新成功
-  ```typescript
-  alert('空き状況を更新しました！');
-  ```
+`frontend/index.html` を更新:
 
-
-### 2. ShopInfoEdit.tsx（2箇所）
-
-- **行161**: 店舗情報保存成功
-  ```typescript
-  alert('店舗情報を保存しました！');
-  ```
-
-- **行164**: 店舗情報保存失敗
-  ```typescript
-  alert('保存に失敗しました。もう一度お試しください。');
-  ```
-
-
-### 3. AvailabilityUpdate.tsx（7箇所）
-
-- **行118**: 空き状況更新成功
-  ```typescript
-  alert('空き状況を更新しました！');
-  ```
-
-- **行121**: 空き状況更新失敗
-  ```typescript
-  alert('更新に失敗しました。もう一度お試しください。');
-  ```
-
-- **行135**: QRコード再発行成功
-  ```typescript
-  alert('QRコードを再発行しました！');
-  ```
-
-- **行138**: QRコード再発行失敗
-  ```typescript
-  alert('再発行に失敗しました。もう一度お試しください。');
-  ```
-
-- **行152**: 合言葉再生成成功
-  ```typescript
-  alert('合言葉を再生成しました！');
-  ```
-
-- **行155**: 合言葉再生成失敗
-  ```typescript
-  alert('再生成に失敗しました。もう一度お試しください。');
-  ```
-
-- **行323**: URLコピー成功
-  ```typescript
-  alert('URLをコピーしました');
-  ```
-
-
-### 合計: 10箇所
-
-## 課題
-
-- ブラウザネイティブのalert()はUIがモダンでない
-- ユーザー操作をブロックする
-- モバイルでの表示が適切でない
-- アクセシビリティに配慮されていない
-- 成功/エラーの視覚的な区別がない
-
-## 実装方針
-
-shadcn/uiのToastコンポーネントを使用して、全てのalert()を置き換えます。
-
-- ライブラリ: `@radix-ui/react-toast`（Radix UIのToastプリミティブ）
-- スタイル: Tailwind CSS + shadcn/uiのデザインシステム
-- 実装: カスタムフックで簡単に使用可能
-- バリアント: 成功（緑）、エラー（赤）、情報（デフォルト）
-
-## 実装手順
-
-### Step 1: 依存関係のインストール
-
-```bash
-cd frontend
-npm install @radix-ui/react-toast
+```html
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- TDK設定 -->
+    <title>ふらのみ - 近くの店舗の空き状況を確認</title>
+    <meta name="description" content="居酒屋・カフェ・レストランの空き状況をリアルタイムで確認。混雑状況を見てからお店を選べます。" />
+    <meta name="keywords" content="居酒屋,カフェ,レストラン,空き状況,混雑,リアルタイム,ふらのみ" />
+    
+    <!-- OGP設定（基本） -->
+    <meta property="og:title" content="ふらのみ - 近くの店舗の空き状況を確認" />
+    <meta property="og:description" content="居酒屋・カフェ・レストランの空き状況をリアルタイムで確認。混雑状況を見てからお店を選べます。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://furanomi.com" />
+    <meta property="og:site_name" content="ふらのみ" />
+    <meta property="og:locale" content="ja_JP" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="ふらのみ - 近くの店舗の空き状況を確認" />
+    <meta name="twitter:description" content="居酒屋・カフェ・レストランの空き状況をリアルタイムで確認。" />
+    
+    <!-- その他のメタタグ -->
+    <meta name="author" content="ふらのみ" />
+    <meta name="theme-color" content="#ffffff" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
 ```
 
-### Step 2: Toastコンポーネントの作成
+**変更点:**
 
-`frontend/src/components/ui/toast.tsx` を作成:
+- `lang="en"` → `lang="ja"`（日本語サイト）
+- `<title>frontend</title>` → 適切なタイトルに変更
+- TDK設定を追加
+- OGP設定を追加（画像は後で追加）
+- Twitter Card設定を追加
 
-- Radix UIのToastプリミティブをラップ
-- shadcn/uiのスタイルを適用
-- 成功、エラー、情報など複数のバリアントをサポート
+### 2. 構造化データ（JSON-LD）
 
-`frontend/src/components/ui/toaster.tsx` を作成:
+`frontend/index.html` の `<head>` 内に追加:
 
-- Toastのコンテナコンポーネント
-- アプリケーション全体で使用
-
-### Step 3: Toastフックの作成
-
-`frontend/src/hooks/use-toast.ts` を作成:
-
-- `toast()` 関数を提供
-- 状態管理とToast表示のロジックを実装
-- 使いやすいAPIを提供
-
-### Step 4: App.tsxに統合
-
-`frontend/src/App.tsx` にToasterコンポーネントを追加:
-
-```tsx
-import { Toaster } from './components/ui/toaster';
-
-// アプリケーションのルート要素に追加
-<Toaster />
+```html
+<!-- 構造化データ（JSON-LD） -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "ふらのみ",
+  "url": "https://furanomi.com",
+  "description": "福岡の居酒屋・カフェ・レストランの空き状況をリアルタイムで確認できるサービス",
+  "inLanguage": "ja",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://furanomi.com?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
 ```
 
-### Step 5: 各コンポーネントの修正
+### 3. sitemap.xml
 
-#### 5-1. StaffAvailabilityUpdate.tsx（1箇所）
+`frontend/public/sitemap.xml` を作成:
 
-```typescript
-// Before
-alert('空き状況を更新しました！');
-
-// After
-toast({
-  title: "更新完了",
-  description: "空き状況を更新しました！",
-});
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://furanomi.com/</loc>
+    <lastmod>2025-01-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
 ```
 
-#### 5-2. ShopInfoEdit.tsx（2箇所）
+**注意:**
 
-成功:
+- 店舗管理者アプリとシステム管理者アプリは意図的に含めない（noindex設定のため）
+- 利用者アプリは基本的に1ページ構成のため、ルートのみ
 
-```typescript
-// Before
-alert('店舗情報を保存しました！');
+### 4. robots.txt
 
-// After
-toast({
-  title: "保存完了",
-  description: "店舗情報を保存しました！",
-});
+`frontend/public/robots.txt` を作成:
+
+```
+User-agent: *
+Allow: /
+
+# 管理画面はクロール禁止
+Disallow: /shop-manager
+Disallow: /system-admin
+
+Sitemap: https://furanomi.com/sitemap.xml
 ```
 
-失敗:
+### 5. バックログ更新
 
-```typescript
-// Before
-alert('保存に失敗しました。もう一度お試しください。');
-
-// After
-toast({
-  title: "保存失敗",
-  description: "保存に失敗しました。もう一度お試しください。",
-  variant: "destructive",
-});
-```
-
-#### 5-3. AvailabilityUpdate.tsx（7箇所）
-
-空き状況更新成功:
-
-```typescript
-toast({
-  title: "更新完了",
-  description: "空き状況を更新しました！",
-});
-```
-
-空き状況更新失敗:
-
-```typescript
-toast({
-  title: "更新失敗",
-  description: "更新に失敗しました。もう一度お試しください。",
-  variant: "destructive",
-});
-```
-
-QRコード再発行成功:
-
-```typescript
-toast({
-  title: "再発行完了",
-  description: "QRコードを再発行しました！",
-});
-```
-
-QRコード再発行失敗:
-
-```typescript
-toast({
-  title: "再発行失敗",
-  description: "再発行に失敗しました。もう一度お試しください。",
-  variant: "destructive",
-});
-```
-
-合言葉再生成成功:
-
-```typescript
-toast({
-  title: "再生成完了",
-  description: "合言葉を再生成しました！",
-});
-```
-
-合言葉再生成失敗:
-
-```typescript
-toast({
-  title: "再生成失敗",
-  description: "再生成に失敗しました。もう一度お試しください。",
-  variant: "destructive",
-});
-```
-
-URLコピー成功:
-
-```typescript
-toast({
-  description: "URLをコピーしました",
-});
-```
-
-### Step 6: バックログの更新
-
-`openspec/backlog.md` から TASK-001 を削除（完了タスクはバックログに残さない運用）
-
-### Step 7: 動作確認
-
-- フロントエンドのビルド確認
-- 開発サーバーでの表示確認
-- 各機能の動作確認:
-    - スタッフ空き状況更新
-    - 店舗情報編集
-    - 店舗管理者の空き状況更新
-    - QRコード再発行
-    - 合言葉再生成
-    - URLコピー
-
-### Step 8: デプロイ
-
-```bash
-git add .
-git commit -m "feat: TASK-001 全てのalert()をトースト通知に置き換え
-
-- @radix-ui/react-toastを追加
-- shadcn/ui Toastコンポーネントを実装
-- useToastフックを作成
-- 3コンポーネント10箇所のalert()をtoast()に置き換え
-  - StaffAvailabilityUpdate.tsx (1箇所)
-  - ShopInfoEdit.tsx (2箇所)
-  - AvailabilityUpdate.tsx (7箇所)
-- モバイル対応とアクセシビリティ改善
-- 成功/エラーの視覚的な区別を追加"
-git push origin main
-```
-
-## 実装詳細
-
-### Toastコンポーネントの仕様
-
-#### バリアント
-
-- `default`: デフォルト（白背景）
-- `destructive`: エラー（赤背景）
-
-#### プロパティ
-
-- `title`: タイトル（オプション）
-- `description`: 説明文（オプション）
-- `variant`: バリアント（デフォルト: "default"）
-- `duration`: 表示時間（デフォルト: 5000ms）
-
-#### 表示位置
-
-- デスクトップ: 右上
-- モバイル: 上部中央
-
-### アクセシビリティ
-
-- ARIA属性の適切な設定
-- キーボード操作対応（Escキーで閉じる）
-- スクリーンリーダー対応
-- 自動フォーカス管理
+`openspec/backlog.md` から TASK-006 を削除（完了タスクは削除する運用）
 
 ## 受け入れ基準
 
-- [x] 全てのalert()が削除されている（10箇所）
-- [x] トースト通知コンポーネントが実装されている
-- [x] 成功時に適切なトースト通知が表示される
-- [x] エラー時に赤いトースト通知が表示される
-- [x] 情報時に青いトースト通知が表示される
-- [x] モバイルで適切に表示される
-- [x] アクセシビリティに配慮されている
-- [x] デスクトップとモバイルで表示位置が適切
-- [x] 複数のトーストが同時に表示可能
-- [x] ビルドエラーがない
-- [x] 全ての機能が正常に動作する
+- [ ] index.htmlに適切なTDK設定がされている
+- [ ] 構造化データ（JSON-LD）が追加されている
+- [ ] sitemap.xmlが作成されている
+- [ ] robots.txtが作成されている
+- [ ] 管理画面がクロール対象外になっている
+- [ ] ビルドエラーがない
+- [ ] 本番環境で正しく動作する
+- [ ] Google Search Consoleで検証可能な状態
 
-## 対象ファイル一覧
+## デプロイ後の確認事項
 
-1. `frontend/src/components/staff/StaffAvailabilityUpdate.tsx` (1箇所)
-2. `frontend/src/components/shopManager/ShopInfoEdit.tsx` (2箇所)
-3. `frontend/src/components/shopManager/AvailabilityUpdate.tsx` (7箇所)
+1. 本番環境（https://furanomi.com）でソースコードを確認
+2. Google Search Console でサイトマップを登録
+3. Google の構造化データテストツールで検証
+4. Lighthouse SEOスコアを確認（目標: 90以上）
 
-## 参考資料
+## 今後の改善（TASK-006完了後）
 
-- [Radix UI Toast Documentation](https://www.radix-ui.com/primitives/docs/components/toast)
-- [shadcn/ui Toast Component](https://ui.shadcn.com/docs/components/toast)
+- OGP画像の作成と設定
+- ファビコンの変更（現在は vite.svg）
+- より詳細な構造化データ（LocalBusiness）の追加
+- パフォーマンス最適化（Core Web Vitals）
 
 ### To-dos
 
-- [x] @radix-ui/react-toastをインストール
-- [x] frontend/src/components/ui/toast.tsxを作成
-- [x] frontend/src/components/ui/toaster.tsxを作成
-- [x] frontend/src/hooks/use-toast.tsを作成
-- [x] App.tsxにToasterコンポーネントを追加
-- [x] StaffAvailabilityUpdate.tsxのalert()を置き換え（1箇所）
-- [x] ShopInfoEdit.tsxのalert()を置き換え（2箇所）
-- [x] AvailabilityUpdate.tsxのalert()を置き換え（7箇所）
-- [x] フロントエンドのビルド確認
-- [x] 全機能の動作確認
-- [x] バックログからTASK-001を削除
-- [x] Gitコミット
-- [x] GitHubへプッシュしてデプロイ
-- [x] 仕様書にトースト通知システムを反映
-- [x] 計画ファイルのステータス更新
+- [ ] index.htmlのlangをjaに変更
+- [ ] TDK設定を追加（title, description, keywords）
+- [ ] OGP設定を追加
+- [ ] Twitter Card設定を追加
+- [ ] 構造化データ（JSON-LD）を追加
+- [ ] sitemap.xmlを作成
+- [ ] robots.txtを作成
+- [ ] フロントエンドのビルド確認
+- [ ] バックログからTASK-006を削除
+- [ ] 変更をコミット
+- [ ] GitHubへプッシュしてデプロイ
+- [ ] 本番環境で動作確認
