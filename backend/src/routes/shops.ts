@@ -28,13 +28,6 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       s.category, s.latitude, s.longitude, s.business_hours, 
       s.image_url, s.is_active,
       sa.status as availability_status, sa.updated_at as availability_updated_at
-      ${lat && lng ? `, (
-        6371000 * acos(
-          cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
-          cos(radians(s.longitude) - radians($${paramCount + 1})) + 
-          sin(radians($${paramCount})) * sin(radians(s.latitude))
-        )
-      ) as distance` : ''}
     FROM shops s
     LEFT JOIN shop_availability sa ON s.id = sa.shop_id
     WHERE s.is_active = true
@@ -42,6 +35,29 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   const params: any[] = [];
   let paramCount = 1;
+
+  // 位置情報が提供された場合は距離計算を追加
+  if (lat && lng) {
+    query = `
+      SELECT 
+        s.id, s.name, s.description, s.address, s.phone, s.email, 
+        s.category, s.latitude, s.longitude, s.business_hours, 
+        s.image_url, s.is_active,
+        sa.status as availability_status, sa.updated_at as availability_updated_at,
+        (
+          6371000 * acos(
+            cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
+            cos(radians(s.longitude) - radians($${paramCount + 1})) + 
+            sin(radians($${paramCount})) * sin(radians(s.latitude))
+          )
+        ) as distance
+      FROM shops s
+      LEFT JOIN shop_availability sa ON s.id = sa.shop_id
+      WHERE s.is_active = true
+    `;
+    params.push(parseFloat(lat as string), parseFloat(lng as string));
+    paramCount += 2;
+  }
 
   // 検索半径の決定（システム設定から取得、デフォルト5000m）
   let searchRadius = 5000; // デフォルト5km
@@ -87,16 +103,30 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   // 位置情報フィルタ（距離計算は既にSELECT句で実行済み）
   if (lat && lng) {
-    query += ` AND distance <= $${paramCount}`;
-    params.push(searchRadius);
-    paramCount++;
+    query += ` AND (
+      6371000 * acos(
+        cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
+        cos(radians(s.longitude) - radians($${paramCount + 1})) + 
+        sin(radians($${paramCount})) * sin(radians(s.latitude))
+      )
+    ) <= $${paramCount + 2}`;
+    params.push(parseFloat(lat as string), parseFloat(lng as string), searchRadius);
+    paramCount += 3;
   }
 
   // ソート（距離計算は既にSELECT句で実行済み）
   if (lat && lng) {
     query += ` ORDER BY 
       CASE WHEN sa.status = 'closed' THEN 1 ELSE 0 END ASC,
-      distance ASC`;
+      (
+        6371000 * acos(
+          cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
+          cos(radians(s.longitude) - radians($${paramCount + 1})) + 
+          sin(radians($${paramCount})) * sin(radians(s.latitude))
+        )
+      ) ASC`;
+    params.push(parseFloat(lat as string), parseFloat(lng as string));
+    paramCount += 2;
   } else {
     query += ` ORDER BY 
       CASE WHEN sa.status = 'closed' THEN 1 ELSE 0 END ASC,
