@@ -1,4 +1,4 @@
-<!-- e918985b-acee-4171-8e21-d779cf77c2e7 21d6566a-67fd-4167-81b7-5b620dd64d85 -->
+<!-- e918985b-acee-4171-8e21-d779cf77c2e7 2d3d4858-40a8-4060-bd96-1ce989e2d8b2 -->
 # Vercel SPA Static Files Configuration
 
 ## 現状の問題
@@ -11,13 +11,13 @@ Web検索の結果、Vercelの公式推奨方法は**`vercel.json`に`rewrites`�
 
 ## 実装手順
 
-### 1. `vercel.json`の修正（Vercel公式推奨方法）
+### 1. `vercel.json`の修正（手動コピー方式）
 
 プロジェクトルートの`vercel.json`を以下のように修正：
 
 ```json
 {
-  "buildCommand": "cd frontend && npm run build",
+  "buildCommand": "cd frontend && npm run build && cp public/sitemap.xml public/robots.txt dist/",
   "outputDirectory": "frontend/dist",
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
@@ -29,10 +29,11 @@ Web検索の結果、Vercelの公式推奨方法は**`vercel.json`に`rewrites`�
 
 **説明:**
 
-- Vercel公式ドキュメントで推奨されている明示的な`rewrites`設定
-- 静的ファイルを先に定義し、最後に`index.html`へのフォールバック
-- 複雑な正規表現を使わず、シンプルで確実な方法
-- 順序が重要：上から順に評価されるため、静的ファイルが優先される
+- ビルドコマンドで`cp`コマンドを使用して静的ファイルを手動コピー
+- `frontend/public/sitemap.xml`と`frontend/public/robots.txt`を`frontend/dist/`にコピー
+- Viteの自動コピーに依存せず、明示的にファイルを配置
+- `rewrites`設定で静的ファイルを優先的に配信
+- 最も確実で、ビルドログでもコピー操作を確認可能
 
 ### 2. ビルドとデプロイ
 
