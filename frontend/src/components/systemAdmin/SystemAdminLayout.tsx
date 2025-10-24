@@ -46,6 +46,26 @@ export const SystemAdminLayout: React.FC<SystemAdminLayoutProps> = ({ children }
     fetchUser();
   }, []); // 依存配列を空にして初回のみ実行
 
+  // SEO設定: 管理画面はnoindex
+  useEffect(() => {
+    const metaRobots = document.createElement('meta');
+    metaRobots.name = 'robots';
+    metaRobots.content = 'noindex, nofollow';
+    document.head.appendChild(metaRobots);
+
+    const metaGooglebot = document.createElement('meta');
+    metaGooglebot.name = 'googlebot';
+    metaGooglebot.content = 'noindex, nofollow';
+    document.head.appendChild(metaGooglebot);
+
+    document.title = 'システム管理 - ふらのみ';
+
+    return () => {
+      document.head.removeChild(metaRobots);
+      document.head.removeChild(metaGooglebot);
+    };
+  }, []);
+
   const handleLogout = async () => {
     if (isLoggingOut) return;
     
