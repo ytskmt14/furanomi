@@ -95,9 +95,7 @@ export const SystemAdminLayout: React.FC<SystemAdminLayoutProps> = ({ children }
         <div className="px-4 py-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-red-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-xs">管</span>
-              </div>
+              <img src="/logo.svg" alt="ふらのみ" className="w-6 h-6" />
               <h1 className="text-lg font-semibold text-gray-900">システム管理</h1>
             </div>
             <div className="flex items-center space-x-3">

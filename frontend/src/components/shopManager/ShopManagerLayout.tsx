@@ -77,9 +77,7 @@ export const ShopManagerLayout: React.FC<ShopManagerLayoutProps> = ({ children }
             {/* ロゴ・タイトル */}
             <div className="flex items-center">
               <Link to="/shop-manager/" className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">店</span>
-                </div>
+                <img src="/logo.svg" alt="ふらのみ" className="w-8 h-8" />
                 <h1 className="text-xl font-semibold text-gray-900">店舗管理</h1>
               </Link>
             </div>
