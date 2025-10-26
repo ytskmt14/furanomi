@@ -1,9 +1,7 @@
 import { useEffect } from 'react';
 import { Hero } from './sections/Hero';
-import { ServiceOverview } from './sections/ServiceOverview';
 import { Features } from './sections/Features';
 import { Tutorial } from './sections/Tutorial';
-import { Shops } from './sections/Shops';
 import { CTA } from './sections/CTA';
 import { useNavigate } from 'react-router-dom';
 
@@ -71,15 +69,11 @@ export const UserLanding: React.FC = () => {
         {/* メインコンテンツ */}
         <main className="pt-16">
           <Hero />
-          <ServiceOverview />
           <div id="features">
             <Features />
           </div>
           <div id="tutorial">
             <Tutorial />
-          </div>
-          <div id="shops">
-            <Shops />
           </div>
           <CTA />
         </main>
@@ -87,41 +81,26 @@ export const UserLanding: React.FC = () => {
         {/* フッター */}
         <footer className="bg-gray-900 text-white py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
               {/* ロゴとキャッチコピー */}
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <img src="/logo.svg" alt="ふらのみ" className="w-8 h-8" />
-                  <span className="text-xl font-bold">ふらのみ</span>
+              <div className="flex items-center gap-3">
+                <img src="/logo.svg" alt="ふらのみ" className="w-8 h-8" />
+                <div>
+                  <span className="text-xl font-bold block">ふらのみ</span>
+                  <p className="text-gray-400 text-sm">
+                    お店の空き状況をリアルタイムで確認
+                  </p>
                 </div>
-                <p className="text-gray-400 text-sm">
-                  お店の空き状況をリアルタイムで確認
-                </p>
               </div>
 
-              {/* リンク */}
+              {/* アプリリンク */}
               <div>
-                <h3 className="font-semibold mb-4">サービス</h3>
-                <ul className="space-y-2 text-sm text-gray-400">
-                  <li>
-                    <button onClick={() => navigate('/user')} className="hover:text-white">
-                      アプリを使う
-                    </button>
-                  </li>
-                  <li>
-                    <button onClick={() => navigate('/shop-manager/login')} className="hover:text-white">
-                      店舗管理者ログイン
-                    </button>
-                  </li>
-                </ul>
-              </div>
-
-              {/* 将来の店舗オーナー向けリンク（プレースホルダー） */}
-              <div>
-                <h3 className="font-semibold mb-4">店舗オーナー様へ</h3>
-                <p className="text-sm text-gray-400">
-                  店舗管理者向けサービスは準備中です
-                </p>
+                <button
+                  onClick={() => navigate('/user')}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  アプリを使う
+                </button>
               </div>
             </div>
 
