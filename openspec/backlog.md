@@ -33,52 +33,7 @@ git log --all --grep="TASK-XXX"
 
 ### 🔴 優先度: 高（緊急対応が必要）
 
-#### TASK-012: バックエンドAPIレスポンス最適化 ✅ 完了
-
-- **カテゴリ**: Improvement (Performance/Backend)
-- **優先度**: 🔴 高
-- **工数見積**: 中(3-5h)
-- **ステータス**: ✅ 完了
-- **OpenSpec Change**: 不要
-- **説明**: 店舗検索APIのレスポンス時間が約5秒かかっている問題を解決する。Waiting for server responseが4.85秒と非常に長く、UXに大きな影響を与えていた。
-
-#### 実装完了項目
-✅ **Phase 1: 距離計算最適化**
-- 距離計算を3回から1回に削減（WITH句でCTE使用）
-- パラメータ重複を解消
-- PostgreSQL WITH句で距離を事前計算
-
-✅ **Phase 2: データベースインデックス適用**
-- 位置情報検索用: `shops(latitude, longitude)`
-- JOIN最適化用: `shop_availability(shop_id)`, `shops(shop_manager_id)`
-- フィルタ用: `shops(is_active)`, `shops(category, is_active)`
-
-✅ **Phase 3: 営業時間判定最適化**
-- JavaScript側の営業時間判定をSQL側に移動
-- PostgreSQL CASE文で営業時間判定を実行
-- JavaScript側の処理を大幅削減
-
-✅ **Phase 4: Railway Hobbyプランアップグレード**
-- RAM: 512MB → 1GB（2倍）
-- vCPU: 共有 → 専用リソース
-- より高速な処理優先度
-
-#### 達成された改善効果
-- **開始時**: 5.3秒
-- **現在**: **4.10秒**（平均）
-- **改善率**: **23%改善**
-- **最大改善**: **3.95秒**（34%改善）
-
-#### 技術詳細
-- PostgreSQL WITH句（CTE）で距離を事前計算
-- 三角関数計算（cos, sin, acos, radians）を1回のみ実行
-- 営業時間判定をSQL側で効率的に実行
-- Railway Hobbyプランで専用リソースを確保
-
-#### 今後の改善余地
-- データベース接続プールの最適化
-- プリペアドステートメントの使用
-- レスポンスデータの最適化
+現時点では特になし
 
 ### 🟡 優先度: 中（近日中に対応したい）
 
