@@ -35,7 +35,6 @@ export default defineConfig({
     },
     assetsDir: 'assets',
     copyPublicDir: true,
-    // Tree Shaking最適化
     minify: 'terser',
     terserOptions: {
       compress: {
