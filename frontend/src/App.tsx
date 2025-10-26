@@ -9,6 +9,7 @@ import { FloatingSearchButton } from './components/FloatingSearchButton';
 import { LoadingList } from './components/Loading';
 import { ErrorBoundary, ErrorMessage, NoSearchResults } from './components/ErrorHandling';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { apiService } from './services/api';
 import { Shop } from './types/shop';
 import { Button } from './components/ui/button';
@@ -196,6 +197,9 @@ const UserApp: React.FC = () => {
         />
 
         <FloatingSearchButton onClick={handleSearchOpen} />
+        
+        {/* PWAインストールプロンプト（利用者アプリのみ） */}
+        <PWAInstallPrompt />
       </div>
     </Layout>
   );
