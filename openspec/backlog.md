@@ -95,8 +95,6 @@ git log --all --grep="TASK-XXX"
 
 ### 🎨 UX/UI改善（Improvements）
 
-- TASK-007: 店舗管理者アプリのSEO対策
-- TASK-008: システム管理者アプリのSEO対策
 - TASK-009: エラーメッセージの詳細化
 - TASK-010: バリデーションの強化
 - TASK-011: タップ領域のサイズ最適化
