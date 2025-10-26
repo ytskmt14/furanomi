@@ -103,7 +103,7 @@ git log --all --grep="TASK-XXX"
 
 ### ⚡ パフォーマンス改善（Performance）
 
-- TASK-016: パフォーマンス最適化（バンドル最適化、キャッシュ戦略）
+現時点では特になし
 
 ### 🔒 セキュリティ強化（Security）
 
