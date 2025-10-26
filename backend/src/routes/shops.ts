@@ -71,54 +71,6 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   const params: any[] = [];
   let paramCount = 1;
-  let query: string;
-
-  // 位置情報が提供された場合はWITH句で距離計算と営業時間判定を1回のみ実行
-  if (lat && lng) {
-    query = `
-      WITH shop_distances AS (
-        SELECT 
-          s.id, s.name, s.description, s.address, 
-          s.category, s.business_hours, 
-          s.image_url,
-          sa.status as availability_status, 
-          (
-            6371000 * acos(
-              cos(radians($${paramCount})) * cos(radians(s.latitude)) * 
-              cos(radians(s.longitude) - radians($${paramCount + 1})) + 
-              sin(radians($${paramCount})) * sin(radians(s.latitude))
-            )
-          ) as distance,
-          CASE 
-            WHEN sa.status = 'closed' THEN 'closed'
-            WHEN s.business_hours IS NULL OR s.business_hours = '{}' THEN sa.status
-            ELSE sa.status
-          END as final_availability_status
-        FROM shops s
-        LEFT JOIN shop_availability sa ON s.id = sa.shop_id
-        WHERE s.is_active = true
-      )
-      SELECT * FROM shop_distances
-    `;
-    params.push(parseFloat(lat as string), parseFloat(lng as string));
-    paramCount += 2;
-  } else {
-    query = `
-      SELECT 
-        s.id, s.name, s.description, s.address, 
-        s.category, s.business_hours, 
-        s.image_url,
-        sa.status as availability_status,
-        CASE 
-          WHEN sa.status = 'closed' THEN 'closed'
-          WHEN s.business_hours IS NULL OR s.business_hours = '{}' THEN sa.status
-          ELSE sa.status
-        END as final_availability_status
-      FROM shops s
-      LEFT JOIN shop_availability sa ON s.id = sa.shop_id
-      WHERE s.is_active = true
-    `;
-  }
 
   // 検索半径の決定（システム設定から取得、デフォルト5000m）
   let searchRadius = 5000; // デフォルト5km
@@ -148,56 +100,99 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  // フィルタ条件を追加
-  const whereConditions: string[] = [];
-  
-  // カテゴリフィルタ
-  if (category) {
-    if (lat && lng) {
-      whereConditions.push(`category = $${paramCount}`);
-    } else {
-      whereConditions.push(`s.category = $${paramCount}`);
-    }
-    params.push(category);
-    paramCount++;
-  }
+  let query: string;
 
-  // 空き状況フィルタ
-  if (status) {
-    if (lat && lng) {
-      whereConditions.push(`availability_status = $${paramCount}`);
-    } else {
-      whereConditions.push(`sa.status = $${paramCount}`);
-    }
-    params.push(status);
-    paramCount++;
-  }
-
-  // 位置情報フィルタ（距離は既にWITH句で計算済み）
+  // 位置情報が提供された場合はWITH句で距離計算と営業時間判定を1回のみ実行
   if (lat && lng) {
+    // lat/lngをパラメータに追加（$1, $2）
+    params.push(parseFloat(lat as string), parseFloat(lng as string));
+    paramCount = 3; // lat/lngで$1, $2を使用済みなので、次は$3から
+    
+    const whereConditions: string[] = [];
+    
+    // カテゴリフィルタ
+    if (category) {
+      whereConditions.push(`category = $${paramCount}`);
+      params.push(category);
+      paramCount++;
+    }
+
+    // 空き状況フィルタ
+    if (status) {
+      whereConditions.push(`availability_status = $${paramCount}`);
+      params.push(status);
+      paramCount++;
+    }
+
+    // 位置情報フィルタ
     whereConditions.push(`distance <= $${paramCount}`);
     params.push(searchRadius);
     paramCount++;
-  }
 
-  // WHERE条件をクエリに追加
-  if (whereConditions.length > 0) {
-    if (lat && lng) {
-      query += ` WHERE ${whereConditions.join(' AND ')}`;
-    } else {
-      query += ` AND ${whereConditions.join(' AND ')}`;
-    }
-  }
-
-  // ソート（距離と営業時間判定は既にWITH句で計算済み）
-  if (lat && lng) {
-    query += ` ORDER BY 
-      CASE WHEN final_availability_status = 'closed' THEN 1 ELSE 0 END ASC,
-      distance ASC`;
+    query = `
+      WITH shop_distances AS (
+        SELECT 
+          s.id, s.name, s.description, s.address, 
+          s.category, s.business_hours, 
+          s.image_url,
+          sa.status as availability_status, 
+          (
+            6371000 * acos(
+              cos(radians($1)) * cos(radians(s.latitude)) * 
+              cos(radians(s.longitude) - radians($2)) + 
+              sin(radians($1)) * sin(radians(s.latitude))
+            )
+          ) as distance,
+          CASE 
+            WHEN sa.status = 'closed' THEN 'closed'
+            WHEN s.business_hours IS NULL OR s.business_hours = '{}' THEN COALESCE(sa.status, 'unknown')
+            ELSE COALESCE(sa.status, 'unknown')
+          END as final_availability_status
+        FROM shops s
+        LEFT JOIN shop_availability sa ON s.id = sa.shop_id
+        WHERE s.is_active = true
+      )
+      SELECT * FROM shop_distances
+      ${whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''}
+      ORDER BY 
+        CASE WHEN final_availability_status = 'closed' THEN 1 ELSE 0 END ASC,
+        distance ASC
+    `;
   } else {
-    query += ` ORDER BY 
-      CASE WHEN final_availability_status = 'closed' THEN 1 ELSE 0 END ASC,
-      s.name ASC`;
+    const whereConditions: string[] = [];
+    
+    // カテゴリフィルタ
+    if (category) {
+      whereConditions.push(`s.category = $${paramCount}`);
+      params.push(category);
+      paramCount++;
+    }
+
+    // 空き状況フィルタ
+    if (status) {
+      whereConditions.push(`sa.status = $${paramCount}`);
+      params.push(status);
+      paramCount++;
+    }
+
+    query = `
+      SELECT 
+        s.id, s.name, s.description, s.address, 
+        s.category, s.business_hours, 
+        s.image_url,
+        sa.status as availability_status,
+        CASE 
+          WHEN sa.status = 'closed' THEN 'closed'
+          WHEN s.business_hours IS NULL OR s.business_hours = '{}' THEN COALESCE(sa.status, 'unknown')
+          ELSE COALESCE(sa.status, 'unknown')
+        END as final_availability_status
+      FROM shops s
+      LEFT JOIN shop_availability sa ON s.id = sa.shop_id
+      WHERE s.is_active = true${whereConditions.length > 0 ? ` AND ${whereConditions.join(' AND ')}` : ''}
+      ORDER BY 
+        CASE WHEN final_availability_status = 'closed' THEN 1 ELSE 0 END ASC,
+        s.name ASC
+    `;
   }
 
   const result = await db.query(query, params);
