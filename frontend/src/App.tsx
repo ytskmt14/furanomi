@@ -8,6 +8,7 @@ import { SearchModal } from './components/SearchModal';
 import { FloatingSearchButton } from './components/FloatingSearchButton';
 import { LoadingList } from './components/Loading';
 import { ErrorBoundary, ErrorMessage, NoSearchResults } from './components/ErrorHandling';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { apiService } from './services/api';
 import { Shop } from './types/shop';
 import { Button } from './components/ui/button';
@@ -295,6 +296,7 @@ function App() {
           <Route path="/" element={<Navigate to="/user" replace />} />
         </Routes>
         <Toaster />
+        <OfflineIndicator />
       </Router>
     </ErrorBoundary>
   );
