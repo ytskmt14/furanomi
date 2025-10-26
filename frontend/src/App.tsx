@@ -17,6 +17,7 @@ import { Toaster } from './components/ui/toaster';
 const ShopManagerApp = lazy(() => import('./components/shopManager/ShopManagerApp'));
 const SystemAdminApp = lazy(() => import('./components/systemAdmin/SystemAdminApp'));
 const StaffAvailabilityUpdate = lazy(() => import('./components/staff/StaffAvailabilityUpdate'));
+const UserLanding = lazy(() => import('./components/landing/UserLanding'));
 
 // 利用者用アプリ
 const UserApp: React.FC = () => {
@@ -259,6 +260,13 @@ function App() {
     <ErrorBoundary>
       <Router>
         <Routes>
+          {/* ランディングページ */}
+          <Route path="/lp" element={
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+              <UserLanding />
+            </Suspense>
+          } />
+          
           {/* 利用者用アプリ（ルート表示） */}
           <Route path="/user/*" element={<UserApp />} />
           
