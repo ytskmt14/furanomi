@@ -10,6 +10,7 @@ import { authRoutes } from './routes/auth';
 import { shopRoutes } from './routes/shops';
 import { availabilityRoutes } from './routes/availability';
 import { systemRoutes } from './routes/system';
+import { notificationRoutes } from './routes/notifications';
 import staffRoutes from './routes/staff';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
@@ -71,6 +72,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/staff', staffRoutes);
 
 // エラーハンドリング
