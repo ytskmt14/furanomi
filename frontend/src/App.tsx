@@ -1,6 +1,5 @@
 import { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { ShopList } from './components/ShopList';
 import { MapView } from './components/MapView';
@@ -15,8 +14,6 @@ import { apiService } from './services/api';
 import { Shop } from './types/shop';
 import { Button } from './components/ui/button';
 import { Toaster } from './components/ui/toaster';
-import { UserProfile } from './components/auth/UserProfile';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 // Code Splitting: 管理画面を遅延ロード
 const ShopManagerApp = lazy(() => import('./components/shopManager/ShopManagerApp'));
@@ -218,8 +215,7 @@ const checkEnvironmentVariables = () => {
   
   const missingVars = requiredEnvVars.filter(varName => {
     const value = import.meta.env[varName];
-    // プレースホルダーや開発環境の値（localhostなど）は有効として扱う
-    return !value || value.includes('YOUR_') || value.includes('REPLACE');
+    return !value || value.includes('YOUR_') || value.includes('localhost');
   });
   
   if (missingVars.length > 0) {
@@ -267,56 +263,45 @@ function App() {
   }
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            {/* ランディングページ */}
-            <Route path="/lp" element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
-                <UserLanding />
-              </Suspense>
-            } />
-            
-            {/* 利用者用アプリ（ルート表示） */}
-            <Route path="/user" element={<UserApp />} />
-            
-            {/* 利用者用プロフィール（認証必須） */}
-            <Route path="/user/profile" element={
-              <ProtectedRoute>
-                <Layout userLocation={null}>
-                  <UserProfile />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            
-            {/* 店舗管理者用アプリ（Code Splitting） */}
-            <Route path="/shop-manager/*" element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
-                <ShopManagerApp />
-              </Suspense>
-            } />
-            
-            {/* システム管理者用アプリ（Code Splitting） */}
-            <Route path="/system-admin/*" element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
-                <SystemAdminApp />
-              </Suspense>
-            } />
-            
-            {/* スタッフ用アプリ（Code Splitting） */}
-            <Route path="/staff/availability" element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
-                <StaffAvailabilityUpdate />
-              </Suspense>
-            } />
-            
-            {/* デフォルトは利用者用アプリ */}
-            <Route path="/" element={<Navigate to="/user" replace />} />
-          </Routes>
-          <Toaster />
-          <OfflineIndicator />
-        </Router>
-      </AuthProvider>
+      <Router>
+        <Routes>
+          {/* ランディングページ */}
+          <Route path="/lp" element={
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+              <UserLanding />
+            </Suspense>
+          } />
+          
+          {/* 利用者用アプリ（ルート表示） */}
+          <Route path="/user/*" element={<UserApp />} />
+          
+          {/* 店舗管理者用アプリ（Code Splitting） */}
+          <Route path="/shop-manager/*" element={
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+              <ShopManagerApp />
+            </Suspense>
+          } />
+          
+          {/* システム管理者用アプリ（Code Splitting） */}
+          <Route path="/system-admin/*" element={
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+              <SystemAdminApp />
+            </Suspense>
+          } />
+          
+          {/* スタッフ用アプリ（Code Splitting） */}
+          <Route path="/staff/availability" element={
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+              <StaffAvailabilityUpdate />
+            </Suspense>
+          } />
+          
+          {/* デフォルトは利用者用アプリ */}
+          <Route path="/" element={<Navigate to="/user" replace />} />
+        </Routes>
+        <Toaster />
+        <OfflineIndicator />
+      </Router>
     </ErrorBoundary>
   );
 }

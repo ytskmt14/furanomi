@@ -312,50 +312,6 @@ class ApiService {
   }> {
     return this.request<any>(`/system/postal-code/${postalCode}`);
   }
-
-  // 利用者認証：登録
-  async registerUser(data: { email: string; password: string; name: string; phone?: string }): Promise<any> {
-    return this.request<any>('/user-auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // 利用者認証：ログイン
-  async loginUser(email: string, password: string): Promise<any> {
-    return this.request<any>('/user-auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-  }
-
-  // 利用者認証：ログアウト
-  async logoutUser(): Promise<{ message: string }> {
-    return this.request<{ message: string }>('/user-auth/logout', {
-      method: 'POST',
-    });
-  }
-
-  // 利用者認証：現在のユーザー情報取得
-  async getCurrentUserAuth(): Promise<any> {
-    return this.request<any>('/user-auth/me');
-  }
-
-  // 利用者認証：パスワードリセット要求
-  async requestPasswordReset(email: string): Promise<any> {
-    return this.request<any>('/user-auth/password-reset/request', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
-  // 利用者認証：パスワードリセット確認
-  async confirmPasswordReset(token: string, newPassword: string): Promise<any> {
-    return this.request<any>('/user-auth/password-reset/confirm', {
-      method: 'POST',
-      body: JSON.stringify({ token, newPassword }),
-    });
-  }
 }
 
 export const apiService = new ApiService();

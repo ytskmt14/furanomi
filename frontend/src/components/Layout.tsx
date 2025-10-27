@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
-import { LoginModal } from './auth/LoginModal';
-import { RegisterModal } from './auth/RegisterModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,9 +8,6 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
   const [locationText, setLocationText] = useState('現在地: 取得中...');
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const { user, logout, isAuthenticated } = useAuth();
   
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleDateString('ja-JP', {
@@ -61,37 +55,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
         {/* セクション分け */}
         <div className="border-t border-gray-100">
           <div className="max-w-8xl mx-auto px-4 py-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-600 font-medium">
-                近くのお店の空き状況をチェック
-              </p>
-              {isAuthenticated && user ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">{user.name} さん</span>
-                  <button
-                    onClick={logout}
-                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
-                  >
-                    ログアウト
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsRegisterOpen(true)}
-                    className="px-3 py-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-                  >
-                    新規登録
-                  </button>
-                  <button
-                    onClick={() => setIsLoginOpen(true)}
-                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
-                  >
-                    ログイン
-                  </button>
-                </div>
-              )}
-            </div>
+            <p className="text-sm text-gray-600 font-medium">
+              近くのお店の空き状況をチェック
+            </p>
           </div>
         </div>
 
@@ -125,14 +91,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
       <footer className="bg-white border-t border-gray-200/60 text-gray-600 text-center py-6">
         <p className="text-sm font-medium">&copy; 2025 ふらのみ. All rights reserved.</p>
       </footer>
-
-      {/* 認証モーダル */}
-      <LoginModal 
-        isOpen={isLoginOpen} 
-        onClose={() => setIsLoginOpen(false)} 
-        onSwitchToRegister={() => setIsRegisterOpen(true)}
-      />
-      <RegisterModal isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
     </div>
   );
 };

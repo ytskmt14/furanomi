@@ -7,7 +7,6 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 import { authRoutes } from './routes/auth';
-import { userAuthRoutes } from './routes/userAuth';
 import { shopRoutes } from './routes/shops';
 import { availabilityRoutes } from './routes/availability';
 import { systemRoutes } from './routes/system';
@@ -69,7 +68,6 @@ if (process.env.NODE_ENV === 'development') {
 
 // API ルート
 app.use('/api/auth', authRoutes);
-app.use('/api/user-auth', userAuthRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/system', systemRoutes);
