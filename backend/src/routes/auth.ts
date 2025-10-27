@@ -51,7 +51,7 @@ router.post('/shop-manager/login', asyncHandler(async (req: Request, res: Respon
     shopId: shopResult.rows[0]?.id
   };
 
-  const token = jwt.sign(payload, process.env.JWT_SECRET || 'your-secret-key', {
+  const token = jwt.sign(payload, process.env.JWT_SECRET || 'temp-development-secret', {
     expiresIn: '24h'
   });
 
@@ -122,7 +122,7 @@ router.post('/system-admin/login', asyncHandler(async (req: Request, res: Respon
     role: 'system_admin'
   };
 
-  const token = jwt.sign(payload, process.env.JWT_SECRET || 'your-secret-key', {
+  const token = jwt.sign(payload, process.env.JWT_SECRET || 'temp-development-secret', {
     expiresIn: '24h'
   });
 

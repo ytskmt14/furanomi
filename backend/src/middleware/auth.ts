@@ -20,7 +20,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 
     // JWT の検証
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as JWTPayload;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'temp-development-secret') as JWTPayload;
     
     // ユーザーの存在確認
     const user = await getUserById(decoded.userId, decoded.role);
