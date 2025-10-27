@@ -6,9 +6,10 @@ import { useToast } from '../../hooks/use-toast';
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSwitchToRegister?: () => void;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
+export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitchToRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -102,6 +103,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               キャンセル
             </Button>
           </div>
+
+          {onSwitchToRegister && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-600">
+                アカウントをお持ちでない方は{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSwitchToRegister();
+                  }}
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
+                  新規登録
+                </button>
+              </p>
+            </div>
+          )}
         </form>
       </div>
     </div>

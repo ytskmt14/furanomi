@@ -76,12 +76,20 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setIsLoginOpen(true)}
-                  className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
-                >
-                  ログイン
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsRegisterOpen(true)}
+                    className="px-3 py-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  >
+                    新規登録
+                  </button>
+                  <button
+                    onClick={() => setIsLoginOpen(true)}
+                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
+                  >
+                    ログイン
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -119,7 +127,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
       </footer>
 
       {/* 認証モーダル */}
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <LoginModal 
+        isOpen={isLoginOpen} 
+        onClose={() => setIsLoginOpen(false)} 
+        onSwitchToRegister={() => setIsRegisterOpen(true)}
+      />
       <RegisterModal isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
     </div>
   );
