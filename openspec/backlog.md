@@ -291,27 +291,28 @@ git log --all --grep="TASK-XXX"
 ### TASK-026: プッシュ通知の個別設定機能
 
 - **カテゴリ**: Feature (Notification)
-- **優先度**: Phase 未確定
+- **優先度**: Phase 2
 - **工数見積**: 中(3-5h)
 - **ステータス**: 🆕 未着手
 - **OpenSpec Change**: ✅ **必要** - 新規 `changes/add-notification-preferences`
-- **説明**: お気に入り店舗のみ通知を受け取るなど、プッシュ通知を個別に設定できる機能を実装
-- **実装内容**:
+- **説明**: 店舗ごとに通知ON/OFFを設定できる機能を実装。Phase 2では簡易版（店舗ごとの通知ON/OFFのみ）として実装。
+- **実装内容（Phase 2 簡易版）**:
   - 通知設定画面の追加
-  - お気に入り店舗のみ通知ON/OFF
-  - 店舗ごとの通知ON/OFF
-  - 通知する時間帯の設定
-  - 通知する状態の選択（空きあり、混雑中など）
+  - 店舗ごとの通知ON/OFF切り替え
+  - 通知設定の保存（データベース）
 - **データベース**:
-  - `notification_preferences`テーブル作成（id, user_id, shop_id, enabled, notify_status, time_range）
-  - `push_subscriptions`テーブル拡張
-- **受け入れ基準**:
+  - `notification_preferences`テーブル作成（id, endpoint, shop_id, enabled, created_at, updated_at）
+  - Phase 2では`user_id`は持たない（購読単位で管理）
+- **受け入れ基準（Phase 2）**:
   - [ ] 通知設定画面が実装されている
-  - [ ] お気に入り店舗のみ通知する設定ができる
   - [ ] 店舗ごとに通知ON/OFFを切り替えられる
+  - [ ] 設定がデータベースに保存される
   - [ ] 設定に従って通知が送信される
-  - [ ] 通知時間帯の制限が機能する
-- **前提条件**: TASK-013（PWA対応）、TASK-022（利用者認証機能）、TASK-025（お気に入り店舗）完了後
+- **前提条件**: TASK-013（PWA対応）完了後
+- **将来拡張（Phase 3以降）**:
+  - お気に入り店舗のみ通知（TASK-025）
+  - 通知時間帯の設定
+  - 通知する状態の選択（空きあり、混雑中など）
 - **関連**: TASK-013（プッシュ通知基本機能）、TASK-025（お気に入り店舗）
 
 ### TASK-027: 来店履歴・チェックイン機能
