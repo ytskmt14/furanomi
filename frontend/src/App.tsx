@@ -218,7 +218,8 @@ const checkEnvironmentVariables = () => {
   
   const missingVars = requiredEnvVars.filter(varName => {
     const value = import.meta.env[varName];
-    return !value || value.includes('YOUR_') || value.includes('localhost');
+    // プレースホルダーや開発環境の値（localhostなど）は有効として扱う
+    return !value || value.includes('YOUR_') || value.includes('REPLACE');
   });
   
   if (missingVars.length > 0) {
