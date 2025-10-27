@@ -36,6 +36,44 @@
 - 機能単位でコミット（フロント実装完了時、バックエンド実装完了時など）
 - ローカル開発のため、PRは任意
 
+### Phase別リリースブランチ運用
+
+#### ブランチ構成
+```
+main (本番環境)
+├── phase-2 (Phase 2統合ブランチ)
+│   ├── feature/add-user-authentication
+│   ├── feature/add-reservation-system
+│   └── feature/add-notification-preferences
+├── phase-3 (Phase 3統合ブランチ)
+│   └── feature/... (各機能ブランチ)
+└── phase-4 (Phase 4統合ブランチ)
+    └── feature/... (各機能ブランチ)
+```
+
+#### 運用ルール
+
+**1. Phaseブランチの作成**
+- Phaseごとに統合ブランチを作成（`phase-2`, `phase-3`, ...）
+- mainブランチから作成
+- Phaseで実装する全機能の統合先
+
+**2. 機能ブランチの作成**
+- Phaseブランチから機能ごとにfeatureブランチを作成
+- 命名規則: `feature/add-{機能名}` または `feature/update-{機能名}`
+- 例: `feature/add-user-authentication`, `feature/update-schema`
+
+**3. 実装フロー**
+1. 機能ブランチで実装
+2. 完了後にPhaseブランチにマージ
+3. Phase内の全機能完了後に統合テスト
+4. 確認後にmainにマージしてリリース
+
+**4. Phaseブランチの管理**
+- Phaseブランチはmainにはマージしない（個別機能単位でマージ）
+- Phaseブランチが古くなった場合は削除し、新しいPhaseブランチを再作成
+- 各機能ブランチは完了後、mainに直接マージしてリリース
+
 ## Domain Context
 - **利用者**: お店の空き状況を確認したい一般ユーザー
 - **店舗管理者**: 自分の店舗の情報と空き状況を管理する人
