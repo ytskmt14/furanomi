@@ -88,6 +88,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔐 Auth API: http://localhost:${PORT}/api/auth`);
+  console.log(`👤 User Auth API: http://localhost:${PORT}/api/user-auth`);
   console.log(`🏪 Shop API: http://localhost:${PORT}/api/shops`);
   console.log(`📈 Availability API: http://localhost:${PORT}/api/availability`);
   console.log(`⚙️  System API: http://localhost:${PORT}/api/system`);
