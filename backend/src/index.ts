@@ -11,6 +11,7 @@ import { shopRoutes } from './routes/shops';
 import { availabilityRoutes } from './routes/availability';
 import { systemRoutes } from './routes/system';
 import staffRoutes from './routes/staff';
+import { reservationRoutes } from './routes/reservations';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { performanceMiddleware, getPerformanceStats } from './middleware/performance';
@@ -72,6 +73,7 @@ app.use('/api/shops', shopRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/reservations', reservationRoutes);
 
 // エラーハンドリング
 app.use(errorHandler);
@@ -90,6 +92,7 @@ app.listen(PORT, () => {
   console.log(`📈 Availability API: http://localhost:${PORT}/api/availability`);
   console.log(`⚙️  System API: http://localhost:${PORT}/api/system`);
   console.log(`👥 Staff API: http://localhost:${PORT}/api/staff`);
+  console.log(`📅 Reservations API: http://localhost:${PORT}/api/reservations`);
 });
 
 export default app;
