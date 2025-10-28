@@ -5,6 +5,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { getAvailabilityText, getAvailabilityColorValue, getCategoryText, getCategoryIcon } from '../utils/helpers';
 import { CreateReservationModal } from './reservation/CreateReservationModal';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ShopDetailProps {
   shop: Shop | null;
@@ -13,6 +14,7 @@ interface ShopDetailProps {
 
 export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
   
   console.log('ShopDetail rendered with shop:', shop);
   if (!shop) return null;
@@ -96,7 +98,7 @@ export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
           </div>
           
           <div className="flex gap-3 pt-4">
-            {shop.availability_status !== 'closed' && (
+            {shop.availability_status !== 'closed' && isAuthenticated && (
               <Button 
                 variant="default" 
                 className="flex-1"
