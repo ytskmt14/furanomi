@@ -11,7 +11,12 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  console.error('Error:', error);
+    console.error('Error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
 
   // デフォルトのエラーレスポンス
   let statusCode = error.statusCode || 500;
