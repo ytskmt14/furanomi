@@ -63,7 +63,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
             <div className="flex items-center gap-2">
               {isAuthenticated && user ? (
                 <>
-                  <span className="text-sm text-gray-600 hidden sm:inline">{user.name} さん</span>
+                  <span className="text-sm text-gray-600">{user.name} さん</span>
                   <button
                     onClick={logout}
                     className="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
