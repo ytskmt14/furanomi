@@ -33,8 +33,10 @@ export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <>
+    {!isReservationModalOpen && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+        <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <h2 className="text-xl font-semibold text-gray-900">
             {getCategoryIcon(shop.category)} {shop.name}
@@ -109,13 +111,17 @@ export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
           </div>
         </CardContent>
       </Card>
+    </div>
+    )}
 
+    {isReservationModalOpen && (
       <CreateReservationModal
         isOpen={isReservationModalOpen}
         onClose={() => setIsReservationModalOpen(false)}
         shopId={shop.id}
         shopName={shop.name}
       />
-    </div>
+    )}
+    </>
   );
 };
