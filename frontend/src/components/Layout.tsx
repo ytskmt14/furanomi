@@ -49,49 +49,54 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
       {/* Apple風ヘッダー */}
       <header className="bg-white border-b border-gray-200/60 shadow-sm">
         {/* メインヘッダー */}
-             <div className="max-w-8xl mx-auto px-4 py-6">
-               <div className="flex items-center justify-center">
-                 <img src="/logo.svg" alt="ふらのみ" className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
-                 <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">
-                   ふらのみ
-                 </h1>
-               </div>
-             </div>
+        <div className="max-w-8xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            {/* ロゴとタイトル */}
+            <div className="flex items-center">
+              <img src="/logo.svg" alt="ふらのみ" className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
+              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">
+                ふらのみ
+              </h1>
+            </div>
 
-        {/* セクション分け */}
-        <div className="border-t border-gray-100">
-          <div className="max-w-8xl mx-auto px-4 py-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-600 font-medium">
-                近くのお店の空き状況をチェック
-              </p>
+            {/* 認証ボタン */}
+            <div className="flex items-center gap-2">
               {isAuthenticated && user ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">{user.name} さん</span>
+                <>
+                  <span className="text-sm text-gray-600 hidden sm:inline">{user.name} さん</span>
                   <button
                     onClick={logout}
-                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
                   >
                     ログアウト
                   </button>
-                </div>
+                </>
               ) : (
-                <div className="flex items-center gap-2">
+                <>
                   <button
                     onClick={() => setIsRegisterOpen(true)}
-                    className="px-3 py-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
                   >
                     新規登録
                   </button>
                   <button
                     onClick={() => setIsLoginOpen(true)}
-                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
                   >
                     ログイン
                   </button>
-                </div>
+                </>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* セクション分け */}
+        <div className="border-t border-gray-100">
+          <div className="max-w-8xl mx-auto px-4 py-3">
+            <p className="text-sm text-gray-600 font-medium">
+              近くのお店の空き状況をチェック
+            </p>
           </div>
         </div>
 
