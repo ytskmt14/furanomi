@@ -29,6 +29,12 @@ const getUserIdFromToken = (req: Request): string | null => {
 router.post('/', asyncHandler(async (req: Request, res: Response) => {
   const userId = getUserIdFromToken(req);
   
+  console.log('Reservation request received:', {
+    hasUserId: !!userId,
+    userId: userId,
+    body: req.body
+  });
+  
   if (!userId) {
     return res.status(401).json({ error: 'Authentication required' });
   }
