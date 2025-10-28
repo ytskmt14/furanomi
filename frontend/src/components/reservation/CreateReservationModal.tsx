@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 import { Button } from '../ui/button';
 import { useToast } from '../../hooks/use-toast';
@@ -20,23 +19,12 @@ export const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
   const [partySize, setPartySize] = useState(1);
   const [arrivalTimeEstimate, setArrivalTimeEstimate] = useState<string>('15min');
   const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!isAuthenticated) {
-      toast({
-        title: 'ログインが必要',
-        description: '予約にはログインが必要です',
-        variant: 'destructive',
-      });
-      onClose();
-      return;
-    }
 
     setIsLoading(true);
 
@@ -50,6 +38,15 @@ export const CreateReservationModal: React.FC<CreateReservationModalProps> = ({
       setPartySize(1);
       setArrivalTimeEstimate('15min');
     } catch (error: any) {
+      if (error.message && error.message.includes('Authentication')) {
+        toast({
+          title: 'ログインが必要',
+          description: '予約にはログインが必要です',
+          variant: 'destructive',
+        });
+        onClose();
+        return;
+      }
       toast({
         title: '予約失敗',
         description: error.message || '予約に失敗しました',
