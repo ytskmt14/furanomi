@@ -17,7 +17,7 @@ interface Reservation {
   updatedAt: string;
 }
 
-export const MyReservations: React.FC = () => {
+const MyReservations: React.FC = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -178,3 +178,5 @@ export const MyReservations: React.FC = () => {
     </div>
   );
 };
+
+export default MyReservations;
