@@ -23,6 +23,7 @@ const ShopManagerApp = lazy(() => import('./components/shopManager/ShopManagerAp
 const SystemAdminApp = lazy(() => import('./components/systemAdmin/SystemAdminApp'));
 const StaffAvailabilityUpdate = lazy(() => import('./components/staff/StaffAvailabilityUpdate'));
 const UserLanding = lazy(() => import('./components/landing/UserLanding'));
+const MyReservations = lazy(() => import('./components/reservation/MyReservations'));
 
 // 利用者用アプリ
 const UserApp: React.FC = () => {
@@ -287,6 +288,13 @@ function App() {
                   <UserProfile />
                 </Layout>
               </ProtectedRoute>
+            } />
+            
+            {/* 利用者用アプリ：マイ予約 */}
+            <Route path="/user/reservations" element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+                <MyReservations />
+              </Suspense>
             } />
             
             {/* 店舗管理者用アプリ（Code Splitting） */}

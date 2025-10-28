@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Shop } from '../types/shop';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { getAvailabilityText, getAvailabilityColorValue, getCategoryText, getCategoryIcon } from '../utils/helpers';
+import { CreateReservationModal } from './reservation/CreateReservationModal';
 
 interface ShopDetailProps {
   shop: Shop | null;
@@ -11,6 +12,8 @@ interface ShopDetailProps {
 }
 
 export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
+  const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
+  
   console.log('ShopDetail rendered with shop:', shop);
   if (!shop) return null;
 
@@ -91,12 +94,28 @@ export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
           </div>
           
           <div className="flex gap-3 pt-4">
+            {shop.availability_status !== 'closed' && (
+              <Button 
+                variant="default" 
+                className="flex-1"
+                onClick={() => setIsReservationModalOpen(true)}
+              >
+                📅 予約する
+              </Button>
+            )}
             <Button variant="outline" className="flex-1">
               🗺️ 地図で開く
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      <CreateReservationModal
+        isOpen={isReservationModalOpen}
+        onClose={() => setIsReservationModalOpen(false)}
+        shopId={shop.id}
+        shopName={shop.name}
+      />
     </div>
   );
 };

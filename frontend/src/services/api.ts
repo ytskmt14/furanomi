@@ -356,6 +356,44 @@ class ApiService {
       body: JSON.stringify({ token, newPassword }),
     });
   }
+
+  // 予約関連API
+  async createReservation(shopId: string, partySize: number, arrivalTimeEstimate: string): Promise<any> {
+    return this.request<any>('/reservations', {
+      method: 'POST',
+      body: JSON.stringify({ shopId, partySize, arrivalTimeEstimate }),
+    });
+  }
+
+  async getMyReservations(): Promise<any> {
+    return this.request<any>('/reservations/my');
+  }
+
+  async getReservation(id: string): Promise<any> {
+    return this.request<any>(`/reservations/${id}`);
+  }
+
+  async cancelReservation(id: string): Promise<any> {
+    return this.request<any>(`/reservations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getShopReservations(shopId: string): Promise<any> {
+    return this.request<any>(`/reservations/shop/${shopId}`);
+  }
+
+  async approveReservation(id: string): Promise<any> {
+    return this.request<any>(`/reservations/${id}/approve`, {
+      method: 'PUT',
+    });
+  }
+
+  async rejectReservation(id: string): Promise<any> {
+    return this.request<any>(`/reservations/${id}/reject`, {
+      method: 'PUT',
+    });
+  }
 }
 
 export const apiService = new ApiService();
