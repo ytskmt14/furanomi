@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { db } from '../config/database';
 import { asyncHandler } from '../middleware/errorHandler';
 import jwt from 'jsonwebtoken';
+import webpush from 'web-push';
 
 const router = express.Router();
 
@@ -10,6 +11,80 @@ interface JWTPayload {
   userId: string;
   email: string;
   role: string;
+}
+
+// ヘルパー関数: 店舗管理者へ予約通知を送信
+async function sendReservationNotificationToShopManager(
+  shopId: string,
+  shopName: string,
+  partySize: number,
+  arrivalTimeEstimate: string
+) {
+  // VAPIDキーの設定確認
+  const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+  
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    console.warn('VAPID keys not configured, skipping push notification');
+    return;
+  }
+
+  // VAPID設定
+  webpush.setVapidDetails(
+    'mailto:furanomi@example.com',
+    vapidPublicKey,
+    vapidPrivateKey
+  );
+
+  // 店舗のshop_manager_idを取得
+  const shopResult = await db.query(
+    'SELECT shop_manager_id FROM shops WHERE id = $1',
+    [shopId]
+  );
+
+  if (shopResult.rows.length === 0 || !shopResult.rows[0].shop_manager_id) {
+    console.warn(`No shop manager found for shop ${shopId}`);
+    return;
+  }
+
+  const shopManagerId = shopResult.rows[0].shop_manager_id;
+
+  // shop_manager_idのプッシュ購読を取得
+  const subscriptionResult = await db.query(
+    'SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE shop_manager_id = $1',
+    [shopManagerId]
+  );
+
+  if (subscriptionResult.rows.length === 0) {
+    console.log(`No push subscription found for shop manager ${shopManagerId}`);
+    return;
+  }
+
+  // 到着時間の表示用テキスト
+  const arrivalText = arrivalTimeEstimate === '15min' ? '15分以内' : 
+                     arrivalTimeEstimate === '30min' ? '30分以内' : '1時間以内';
+
+  // 通知メッセージを送信
+  const subscription = {
+    endpoint: subscriptionResult.rows[0].endpoint,
+    keys: {
+      p256dh: subscriptionResult.rows[0].p256dh,
+      auth: subscriptionResult.rows[0].auth
+    }
+  };
+
+  const payload = JSON.stringify({
+    title: '新規予約',
+    body: `${shopName}: ${partySize}名 / ${arrivalText}`,
+    icon: '/logo.svg',
+    badge: '/logo.svg',
+    data: {
+      url: `/shop-manager/reservations`
+    }
+  });
+
+  await webpush.sendNotification(subscription, payload);
+  console.log(`Push notification sent to shop manager ${shopManagerId}`);
 }
 
 // ヘルパー関数: トークンからユーザーID取得
@@ -67,6 +142,19 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
   );
 
   const reservation = result.rows[0];
+
+  // 店舗管理者へプッシュ通知を送信
+  try {
+    await sendReservationNotificationToShopManager(
+      shopId,
+      shopResult.rows[0].name,
+      partySize,
+      arrivalTimeEstimate
+    );
+  } catch (notificationError) {
+    // 通知送信失敗は無視（予約作成は成功とする）
+    console.error('Failed to send push notification:', notificationError);
+  }
 
   res.status(201).json({
     message: 'Reservation created successfully',

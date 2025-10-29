@@ -13,6 +13,7 @@ import { availabilityRoutes } from './routes/availability';
 import { systemRoutes } from './routes/system';
 import staffRoutes from './routes/staff';
 import { reservationRoutes } from './routes/reservations';
+import { notificationRoutes } from './routes/notifications';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { performanceMiddleware, getPerformanceStats } from './middleware/performance';
@@ -76,6 +77,7 @@ app.use('/api/availability', availabilityRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/reservations', reservationRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // エラーハンドリング
 app.use(errorHandler);

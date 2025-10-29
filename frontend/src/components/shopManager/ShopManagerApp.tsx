@@ -6,6 +6,7 @@ import { ShopManagerDashboard } from './ShopManagerDashboard';
 import { ShopInfoEdit } from './ShopInfoEdit';
 import { AvailabilityUpdate } from './AvailabilityUpdate';
 import { ReservationManagement } from './ReservationManagement';
+import { Settings } from './Settings';
 
 const ShopManagerApp: React.FC = () => {
   return (
@@ -19,6 +20,7 @@ const ShopManagerApp: React.FC = () => {
         <Route path="shop" element={<ShopInfoEdit />} />
         <Route path="availability" element={<AvailabilityUpdate />} />
         <Route path="reservations" element={<ReservationManagement />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
       
       {/* デフォルトリダイレクト */}

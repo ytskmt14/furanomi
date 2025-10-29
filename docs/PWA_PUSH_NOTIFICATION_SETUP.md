@@ -4,6 +4,10 @@
 
 このドキュメントでは、Phase 2リリース時に必要なPWAプッシュ通知機能のセットアップ手順を説明します。
 
+**通知の種類**:
+- **店舗管理者向け**: 予約が作成されたときに通知（実装済み）
+- **利用者向け**: 店舗の空き状況変更時に通知（TASK-013で実装予定）
+
 ## 必要な作業
 
 ### 1. VAPID鍵の生成
@@ -58,10 +62,14 @@ VAPID_EMAIL=mailto:admin@furanomi.com
 
 プッシュ通知の購読情報を保存するテーブルを作成します。
 
+#### マイグレーションファイル: `008_add_push_subscriptions.sql`
+
+このファイルは店舗管理者向けのプッシュ通知購読情報を保存します。
+
 ```bash
 # マイグレーションファイルを実行
 cd backend
-psql -U your_db_user -d your_db_name -f database/migrations/005_add_push_subscriptions.sql
+psql -U your_db_user -d your_db_name -f database/migrations/008_add_push_subscriptions.sql
 ```
 
 または、Node.jsのスクリプトで実行：
@@ -69,6 +77,19 @@ psql -U your_db_user -d your_db_name -f database/migrations/005_add_push_subscri
 ```bash
 cd backend
 npm run db:migrate
+```
+
+#### テーブル構造
+
+```sql
+CREATE TABLE push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shop_manager_id UUID NOT NULL REFERENCES shop_managers(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 ```
 
 ### 4. 依存関係のインストール
@@ -96,7 +117,9 @@ VAPID公開鍵が取得できることを確認：
 curl http://localhost:3001/api/notifications/vapid-public-key
 ```
 
-#### 5.2 フロントエンドの動作確認
+#### 5.2 フロントエンドの動作確認（店舗管理者向け）
+
+店舗管理者アプリでプッシュ通知の設定を行います。
 
 ```bash
 cd frontend
@@ -104,16 +127,19 @@ npm run build
 npm run preview
 ```
 
-1. 利用者アプリ（`/user`）にアクセス
-2. 右下の「通知OFF」ボタンをクリック
-3. 通知許可ダイアログが表示されることを確認
-4. 許可すると「通知ON」に変わることを確認
+1. 店舗管理者アプリ（`/shop-manager`）にログイン
+2. 「設定」タブに移動
+3. 「通知を有効にする」ボタンをクリック
+4. 通知許可ダイアログが表示されることを確認
+5. 許可すると「✓ プッシュ通知が有効です」と表示されることを確認
 
-#### 5.3 プッシュ通知のテスト
+#### 5.3 プッシュ通知のテスト（店舗管理者向け）
 
-1. 別ウィンドウで店舗管理画面にアクセス
-2. 店舗の空き状況を更新
-3. 利用者アプリ側に通知が届くことを確認
+1. 店舗管理者アプリでログイン
+2. 設定画面でプッシュ通知を有効化
+3. 利用者アプリ（`/user`）から予約を作成
+4. 店舗管理者アプリ側に通知が届くことを確認
+5. 通知をクリックすると予約管理画面（`/shop-manager/reservations`）に遷移することを確認
 
 ## トラブルシューティング
 
@@ -159,10 +185,15 @@ npm run preview
 
 - [ ] VAPID鍵を生成
 - [ ] 環境変数を設定（本番環境）
-- [ ] データベースマイグレーション実行
+  - [ ] `VAPID_PUBLIC_KEY` をバックエンドに設定
+  - [ ] `VAPID_PRIVATE_KEY` をバックエンドに設定
+- [ ] データベースマイグレーション実行（`008_add_push_subscriptions.sql`）
 - [ ] バックエンドのビルド・デプロイ
 - [ ] フロントエンドのビルド・デプロイ
-- [ ] 動作確認（通知許可、通知受信）
+- [ ] 店舗管理者向け動作確認
+  - [ ] 設定画面でプッシュ通知を有効化
+  - [ ] 予約作成時に通知が届くことを確認
+- [ ] 利用者アプリ向け通知（TASK-013）は次期実装
 
 ## 参考リンク
 

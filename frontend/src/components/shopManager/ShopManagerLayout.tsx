@@ -124,6 +124,16 @@ export const ShopManagerLayout: React.FC<ShopManagerLayoutProps> = ({ children }
               >
                 📅 予約管理
               </Link>
+              <Link
+                to="/shop-manager/settings"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/shop-manager/settings')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                ⚙️ 設定
+              </Link>
             </nav>
 
             {/* ユーザー情報・ログアウト */}
@@ -201,6 +211,17 @@ export const ShopManagerLayout: React.FC<ShopManagerLayoutProps> = ({ children }
           >
             <span className="text-lg mb-1">📅</span>
             <span>予約管理</span>
+          </Link>
+          <Link
+            to="/shop-manager/settings"
+            className={`flex flex-col items-center py-2 px-3 text-xs font-medium ${
+              isActive('/shop-manager/settings')
+                ? 'text-blue-600'
+                : 'text-gray-600'
+            }`}
+          >
+            <span className="text-lg mb-1">⚙️</span>
+            <span>設定</span>
           </Link>
         </div>
       </div>

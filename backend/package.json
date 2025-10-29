@@ -41,9 +41,11 @@
     "swagger-ui-express": "^5.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
+    "web-push": "^3.6.7",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "@types/compression": "^1.8.1"
+    "@types/compression": "^1.8.1",
+    "@types/web-push": "^3.6.4"
   }
 }
