@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
 import { LoginModal } from './auth/LoginModal';
@@ -13,7 +14,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
   const [locationText, setLocationText] = useState('現在地: 取得中...');
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [pendingReservationsCount, setPendingReservationsCount] = useState(0);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
+  const menuRef = useRef<HTMLDivElement>(null);
   
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleDateString('ja-JP', {
@@ -44,6 +48,41 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
     updateLocationText();
   }, [userLocation]);
 
+  // 予約件数を取得
+  useEffect(() => {
+    const fetchPendingReservationsCount = async () => {
+      if (!isAuthenticated) {
+        setPendingReservationsCount(0);
+        return;
+      }
+
+      try {
+        const response = await apiService.getMyReservations();
+        const pendingCount = response.reservations.filter((r: any) => r.status === 'pending').length;
+        setPendingReservationsCount(pendingCount);
+      } catch (error) {
+        console.error('Failed to fetch pending reservations count:', error);
+        setPendingReservationsCount(0);
+      }
+    };
+
+    fetchPendingReservationsCount();
+  }, [isAuthenticated]);
+
+  // ドロップダウンの外側クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Apple風ヘッダー */}
@@ -60,16 +99,63 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
             </div>
 
             {/* 認証ボタン */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {isAuthenticated && user ? (
                 <>
-                  <span className="text-sm text-gray-600">{user.name} さん</span>
-                  <button
-                    onClick={logout}
-                    className="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
+                  {/* 予約通知アイコン */}
+                  <Link 
+                    to="/user/reservations" 
+                    className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
                   >
-                    ログアウト
-                  </button>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {pendingReservationsCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {pendingReservationsCount}
+                      </span>
+                    )}
+                  </Link>
+
+                  {/* ユーザーメニュー */}
+                  <div className="relative" ref={menuRef}>
+                    <button
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded-lg transition-colors"
+                    >
+                      <span>{user.name} さん</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                        <Link
+                          to="/user/reservations"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          📅 マイ予約
+                        </Link>
+                        <Link
+                          to="/user/profile"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          👤 プロフィール
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            logout();
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors"
+                        >
+                          ログアウト
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 <>
