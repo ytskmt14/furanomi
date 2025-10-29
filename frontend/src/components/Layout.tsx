@@ -91,12 +91,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
         <div className="max-w-8xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             {/* ロゴとタイトル */}
-            <div className="flex items-center">
+            <Link to="/user" className="flex items-center hover:opacity-80 transition-opacity">
               <img src="/logo.svg" alt="ふらのみ" className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3" />
               <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">
                 ふらのみ
               </h1>
-            </div>
+            </Link>
 
             {/* 認証ボタン */}
             <div className="flex items-center gap-3">
