@@ -292,9 +292,13 @@ function App() {
             
             {/* 利用者用アプリ：マイ予約 */}
             <Route path="/user/reservations" element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
-                <MyReservations />
-              </Suspense>
+              <ProtectedRoute>
+                <Layout userLocation={null}>
+                  <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+                    <MyReservations />
+                  </Suspense>
+                </Layout>
+              </ProtectedRoute>
             } />
             
             {/* 店舗管理者用アプリ（Code Splitting） */}
