@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { Button } from '../ui/button';
@@ -110,6 +111,11 @@ const MyReservations: React.FC = () => {
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-6">
+        <div className="mb-4">
+          <Link to="/user" className="text-blue-600 hover:text-blue-800 text-sm">
+            ← 店舗一覧に戻る
+          </Link>
+        </div>
         <h1 className="text-2xl font-bold mb-6">マイ予約</h1>
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -121,6 +127,11 @@ const MyReservations: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      <div className="mb-4">
+        <Link to="/user" className="text-blue-600 hover:text-blue-800 text-sm">
+          ← 店舗一覧に戻る
+        </Link>
+      </div>
       <h1 className="text-2xl font-bold mb-6">マイ予約</h1>
 
       {reservations.length === 0 ? (
