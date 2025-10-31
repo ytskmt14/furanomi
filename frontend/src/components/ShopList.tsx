@@ -215,22 +215,45 @@ export const ShopList: React.FC<ShopListProps> = ({ shops }) => {
                 {/* 住所 + 地図アイコン（横並び） */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span className="truncate">{shop.address}</span>
-                  {(shop.latitude && shop.longitude) || shop.address ? (
-                    <a
-                      href={
-                        shop.latitude != null && shop.longitude != null && !isNaN(shop.latitude) && !isNaN(shop.longitude)
-                          ? `https://www.google.com/maps?q=${shop.latitude},${shop.longitude}`
-                          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-md px-2 py-1 text-xs font-semibold tracking-wide text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100"
-                      aria-label="地図で開く"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      MAP
-                    </a>
-                  ) : null}
+                  {(() => {
+                    // latitudeとlongitudeを数値に変換してチェック
+                    const lat = typeof shop.latitude === 'string' ? parseFloat(shop.latitude) : Number(shop.latitude);
+                    const lng = typeof shop.longitude === 'string' ? parseFloat(shop.longitude) : Number(shop.longitude);
+                    const hasValidCoords = lat != null && lng != null && !isNaN(lat) && !isNaN(lng) && 
+                                           typeof lat === 'number' && typeof lng === 'number' &&
+                                           lat !== 0 && lng !== 0;
+                    
+                    // デバッグログ（開発環境のみ）
+                    if (import.meta.env.DEV && shop.latitude && shop.longitude && !hasValidCoords) {
+                      console.log('Invalid coordinates detected:', {
+                        shopId: shop.id,
+                        shopName: shop.name,
+                        originalLat: shop.latitude,
+                        originalLng: shop.longitude,
+                        parsedLat: lat,
+                        parsedLng: lng,
+                        latType: typeof shop.latitude,
+                        lngType: typeof shop.longitude
+                      });
+                    }
+                    
+                    return (hasValidCoords || shop.address) ? (
+                      <a
+                        href={
+                          hasValidCoords
+                            ? `https://www.google.com/maps?q=${lat},${lng}`
+                            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center rounded-md px-2 py-1 text-xs font-semibold tracking-wide text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100"
+                        aria-label="地図で開く"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        MAP
+                      </a>
+                    ) : null;
+                  })()}
                 </div>
                 {/* カテゴリ */}
                 <div className="flex items-center">
