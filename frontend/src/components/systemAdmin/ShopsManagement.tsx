@@ -51,6 +51,8 @@ export const ShopsManagement: React.FC = () => {
     latitude: 0,
     longitude: 0,
     shop_manager_id: '',
+    image_url: '',
+    is_active: false,
     business_hours: {
       monday: { open: '09:00', close: '21:00' },
       tuesday: { open: '09:00', close: '21:00' },
@@ -135,6 +137,8 @@ export const ShopsManagement: React.FC = () => {
       latitude: 0,
       longitude: 0,
       shop_manager_id: '',
+      image_url: '',
+      is_active: false,
       business_hours: {
         monday: { open: '09:00', close: '21:00' },
         tuesday: { open: '09:00', close: '21:00' },
@@ -174,6 +178,8 @@ export const ShopsManagement: React.FC = () => {
       latitude: shop.latitude,
       longitude: shop.longitude,
       shop_manager_id: shop.shop_manager?.id || '',
+      image_url: shop.image_url || '',
+      is_active: shop.is_active !== undefined ? shop.is_active : false,
       business_hours: shop.business_hours || {
         monday: { open: '09:00', close: '21:00' },
         tuesday: { open: '09:00', close: '21:00' },

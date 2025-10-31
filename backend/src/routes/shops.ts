@@ -524,20 +524,37 @@ router.put('/system/:id', authenticateToken, requireSystemAdmin, asyncHandler(as
     phone, email, category, latitude, longitude, business_hours, image_url, shop_manager_id, is_active 
   } = req.body;
 
-  // 店舗の存在確認
-  const shopCheck = await db.query('SELECT id FROM shops WHERE id = $1', [id]);
+  // 店舗の存在確認と現在の値を取得
+  const shopCheck = await db.query(`
+    SELECT id, image_url as current_image_url, is_active as current_is_active, shop_manager_id as current_shop_manager_id
+    FROM shops WHERE id = $1
+  `, [id]);
   
   if (shopCheck.rows.length === 0) {
     return res.status(404).json({ error: '店舗が見つかりません' });
   }
+
+  const currentShop = shopCheck.rows[0];
 
   // バリデーション
   if (!latitude || !longitude) {
     return res.status(400).json({ error: '緯度経度が設定されていません。位置取得ボタンをクリックしてください。' });
   }
 
-  // business_hoursをJSONに変換
-  const businessHoursJson = JSON.stringify(business_hours);
+  // 送信されていないフィールドは現在の値を保持
+  const finalImageUrl = image_url !== undefined ? image_url : currentShop.current_image_url;
+  const finalIsActive = is_active !== undefined ? is_active : currentShop.current_is_active;
+  const finalShopManagerId = shop_manager_id !== undefined ? shop_manager_id : currentShop.current_shop_manager_id;
+
+  // business_hoursをJSONに変換（送信されていない場合は現在の値を保持）
+  let businessHoursJson;
+  if (business_hours !== undefined) {
+    businessHoursJson = JSON.stringify(business_hours);
+  } else {
+    // 現在の値を取得
+    const currentShopFull = await db.query('SELECT business_hours FROM shops WHERE id = $1', [id]);
+    businessHoursJson = currentShopFull.rows[0]?.business_hours ? JSON.stringify(currentShopFull.rows[0].business_hours) : null;
+  }
 
   const result = await db.query(`
     UPDATE shops SET 
@@ -554,7 +571,7 @@ router.put('/system/:id', authenticateToken, requireSystemAdmin, asyncHandler(as
   `, [
     name, description, address, postalCode, formattedAddress, placeId,
     phone, email, category, latitude, longitude,
-    businessHoursJson, image_url, shop_manager_id, is_active, id
+    businessHoursJson, finalImageUrl, finalShopManagerId, finalIsActive, id
   ]);
 
   res.json(result.rows[0]);
