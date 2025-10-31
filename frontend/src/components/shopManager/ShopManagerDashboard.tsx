@@ -124,7 +124,9 @@ export const ShopManagerDashboard: React.FC = () => {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
-                {shop.business_hours.monday.open} - {shop.business_hours.monday.close}
+                {shop.business_hours?.monday?.open && shop.business_hours?.monday?.close
+                  ? `${shop.business_hours.monday.open} - ${shop.business_hours.monday.close}`
+                  : '未設定'}
               </div>
               <p className="text-sm text-gray-600 mt-1">営業時間</p>
             </div>
