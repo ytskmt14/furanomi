@@ -15,6 +15,8 @@ interface ShopListProps {
 }
 
 export const ShopList: React.FC<ShopListProps> = ({ shops }) => {
+  console.log('[ShopList] Component rendered with shops:', shops.length, shops);
+  
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -216,6 +218,18 @@ export const ShopList: React.FC<ShopListProps> = ({ shops }) => {
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span className="truncate">{shop.address}</span>
                   {(() => {
+                    // デバッグログ（常に表示して問題を特定）
+                    console.log(`[ShopList] Rendering shop: ${shop.name}`, {
+                      shopId: shop.id,
+                      hasLatitude: 'latitude' in shop,
+                      hasLongitude: 'longitude' in shop,
+                      originalLat: shop.latitude,
+                      originalLng: shop.longitude,
+                      originalLatType: typeof shop.latitude,
+                      originalLngType: typeof shop.longitude,
+                      shopKeys: Object.keys(shop)
+                    });
+                    
                     // latitudeとlongitudeを数値に変換してチェック
                     const lat = typeof shop.latitude === 'string' ? parseFloat(shop.latitude) : Number(shop.latitude);
                     const lng = typeof shop.longitude === 'string' ? parseFloat(shop.longitude) : Number(shop.longitude);
@@ -223,22 +237,14 @@ export const ShopList: React.FC<ShopListProps> = ({ shops }) => {
                                            typeof lat === 'number' && typeof lng === 'number' &&
                                            Math.abs(lat) > 0.0001 && Math.abs(lng) > 0.0001;
                     
-                    // デバッグログ（常に表示して問題を特定）
-                    if (shop.latitude != null || shop.longitude != null) {
-                      console.log(`[ShopList] ${shop.name}:`, {
-                        shopId: shop.id,
-                        originalLat: shop.latitude,
-                        originalLng: shop.longitude,
-                        originalLatType: typeof shop.latitude,
-                        originalLngType: typeof shop.longitude,
-                        parsedLat: lat,
-                        parsedLng: lng,
-                        parsedLatType: typeof lat,
-                        parsedLngType: typeof lng,
-                        hasValidCoords,
-                        willUseAddress: !hasValidCoords
-                      });
-                    }
+                    console.log(`[ShopList] ${shop.name} - Coordinates check:`, {
+                      parsedLat: lat,
+                      parsedLng: lng,
+                      parsedLatType: typeof lat,
+                      parsedLngType: typeof lng,
+                      hasValidCoords,
+                      willUseAddress: !hasValidCoords
+                    });
                     
                     return (hasValidCoords || shop.address) ? (
                       <a
