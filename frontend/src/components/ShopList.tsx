@@ -221,19 +221,22 @@ export const ShopList: React.FC<ShopListProps> = ({ shops }) => {
                     const lng = typeof shop.longitude === 'string' ? parseFloat(shop.longitude) : Number(shop.longitude);
                     const hasValidCoords = lat != null && lng != null && !isNaN(lat) && !isNaN(lng) && 
                                            typeof lat === 'number' && typeof lng === 'number' &&
-                                           lat !== 0 && lng !== 0;
+                                           Math.abs(lat) > 0.0001 && Math.abs(lng) > 0.0001;
                     
-                    // デバッグログ（開発環境のみ）
-                    if (import.meta.env.DEV && shop.latitude && shop.longitude && !hasValidCoords) {
-                      console.log('Invalid coordinates detected:', {
+                    // デバッグログ（常に表示して問題を特定）
+                    if (shop.latitude != null || shop.longitude != null) {
+                      console.log(`[ShopList] ${shop.name}:`, {
                         shopId: shop.id,
-                        shopName: shop.name,
                         originalLat: shop.latitude,
                         originalLng: shop.longitude,
+                        originalLatType: typeof shop.latitude,
+                        originalLngType: typeof shop.longitude,
                         parsedLat: lat,
                         parsedLng: lng,
-                        latType: typeof shop.latitude,
-                        lngType: typeof shop.longitude
+                        parsedLatType: typeof lat,
+                        parsedLngType: typeof lng,
+                        hasValidCoords,
+                        willUseAddress: !hasValidCoords
                       });
                     }
                     
