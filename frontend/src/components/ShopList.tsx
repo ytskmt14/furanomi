@@ -215,16 +215,22 @@ export const ShopList: React.FC<ShopListProps> = ({ shops }) => {
                 {/* 住所 + 地図アイコン（横並び） */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span className="truncate">{shop.address}</span>
-                  <a
-                    href={`https://www.google.com/maps?q=${encodeURIComponent(shop.latitude)},${encodeURIComponent(shop.longitude)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-md px-2 py-1 text-xs font-semibold tracking-wide text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100"
-                    aria-label="地図で開く"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    MAP
-                  </a>
+                  {(shop.latitude && shop.longitude) || shop.address ? (
+                    <a
+                      href={
+                        shop.latitude != null && shop.longitude != null && !isNaN(shop.latitude) && !isNaN(shop.longitude)
+                          ? `https://www.google.com/maps?q=${shop.latitude},${shop.longitude}`
+                          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-md px-2 py-1 text-xs font-semibold tracking-wide text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100"
+                      aria-label="地図で開く"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      MAP
+                    </a>
+                  ) : null}
                 </div>
                 {/* カテゴリ */}
                 <div className="flex items-center">

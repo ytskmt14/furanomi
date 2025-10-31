@@ -134,6 +134,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
         SELECT 
           s.id, s.name, s.description, s.address, 
           s.category, s.business_hours, 
+          s.latitude, s.longitude,
           s.image_url,
           sa.status as availability_status, 
           (
@@ -179,6 +180,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       SELECT 
         s.id, s.name, s.description, s.address, 
         s.category, s.business_hours, 
+        s.latitude, s.longitude,
         s.image_url,
         s.is_active,
         s.shop_manager_id,
