@@ -295,6 +295,8 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       description: row.description,
       address: row.address,
       category: row.category,
+      latitude: row.latitude !== undefined && row.latitude !== null ? parseFloat(row.latitude.toString()) : null,
+      longitude: row.longitude !== undefined && row.longitude !== null ? parseFloat(row.longitude.toString()) : null,
       business_hours: simplifyBusinessHours(row.business_hours),
       image_url: row.image_url,
       availability_status: row.final_availability_status || row.availability_status,
