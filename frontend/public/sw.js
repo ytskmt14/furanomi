@@ -1,5 +1,5 @@
 // Service Worker Version
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.0.2';
 const CACHE_NAME = `furanomi-cache-${CACHE_VERSION}`;
 
 // キャッシュ対象のリソース
@@ -50,31 +50,36 @@ self.addEventListener('activate', (event) => {
 
 // Network First 戦略：ネットワークから取得を試み、失敗したらキャッシュを使用
 self.addEventListener('fetch', (event) => {
-  // API リクエストは Network First
-  if (event.request.url.includes('/api/') || event.request.url.includes('shops')) {
+  const { request } = event;
+
+  // 非GET（POST/PUT/DELETEなど）はそのままネットワークへ流す（キャッシュしない）
+  if (request.method !== 'GET') {
+    return; // 既定のfetch動作
+  }
+
+  // API リクエストは Network First（GET のみキャッシュ）
+  if (request.url.includes('/api/') || request.url.includes('shops')) {
     event.respondWith(
-      fetch(event.request)
+      fetch(request)
         .then((response) => {
-          // 成功したらキャッシュに保存してから返す
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          // 正常レスポンスのみキャッシュ
+          if (response && response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
           return response;
         })
-        .catch(() => {
-          // ネットワーク失敗時はキャッシュから取得
-          return caches.match(event.request);
-        })
+        .catch(() => caches.match(request))
     );
-  } else {
-    // 静的リソースは Cache First
-    event.respondWith(
-      caches.match(event.request).then((response) => {
-        return response || fetch(event.request);
-      })
-    );
+    return;
   }
+
+  // 静的リソースは Cache First
+  event.respondWith(
+    caches.match(request).then((cached) => cached || fetch(request))
+  );
 });
 
 // プッシュ通知受信
@@ -108,7 +113,18 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   event.waitUntil(
-    clients.openWindow('/')
+    (async () => {
+      const targetUrl = (event.notification && event.notification.data && event.notification.data.url) || '/';
+      const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of allClients) {
+        if ('focus' in client) {
+          client.focus();
+          client.navigate(targetUrl);
+          return;
+        }
+      }
+      return clients.openWindow(targetUrl);
+    })()
   );
 });
 

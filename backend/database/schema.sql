@@ -102,3 +102,74 @@ CREATE TRIGGER update_system_settings_updated_at BEFORE UPDATE ON system_setting
 CREATE TRIGGER update_system_admins_updated_at BEFORE UPDATE ON system_admins FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_shop_managers_updated_at BEFORE UPDATE ON shop_managers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_shops_updated_at BEFORE UPDATE ON shops FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 7. 利用者テーブル（ユーザーアプリ）
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    reset_token VARCHAR(255),
+    reset_token_expires_at TIMESTAMP WITH TIME ZONE,
+    last_login_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. 予約テーブル
+CREATE TABLE IF NOT EXISTS reservations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    shop_id UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    party_size INTEGER NOT NULL CHECK (party_size > 0),
+    arrival_time_estimate VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending','approved','rejected','cancelled')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. 店舗管理者向けプッシュ購読テーブル
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    shop_manager_id UUID NOT NULL REFERENCES shop_managers(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. 利用者向けプッシュ購読テーブル
+CREATE TABLE IF NOT EXISTS user_push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. 店舗ごとの拡張機能設定テーブル
+CREATE TABLE IF NOT EXISTS shop_feature_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    shop_id UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    feature_name VARCHAR(50) NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (shop_id, feature_name)
+);
+
+-- 追加インデックス
+CREATE INDEX IF NOT EXISTS idx_reservations_user ON reservations(user_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_shop ON reservations(shop_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
+CREATE INDEX IF NOT EXISTS idx_push_subs_manager ON push_subscriptions(shop_manager_id);
+CREATE INDEX IF NOT EXISTS idx_user_push_subs_user ON user_push_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_shop_feature_settings_shop_id ON shop_feature_settings(shop_id);
+CREATE INDEX IF NOT EXISTS idx_shop_feature_settings_feature_name ON shop_feature_settings(feature_name);
+
+-- トリガーの作成（追加テーブル）
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_reservations_updated_at BEFORE UPDATE ON reservations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_shop_feature_settings_updated_at BEFORE UPDATE ON shop_feature_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

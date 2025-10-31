@@ -6,7 +6,7 @@ import { db } from '../config/database';
 export interface JWTPayload {
   userId: string;
   username: string;
-  role: 'shop_manager' | 'system_admin';
+  role: 'shop_manager' | 'system_admin' | 'user';
   shopId?: string; // 店舗管理者の場合のみ
 }
 
@@ -74,6 +74,12 @@ async function getUserById(userId: string, role: string) {
         [userId]
       );
       return result.rows[0];
+    } else if (role === 'user') {
+      const result = await db.query(
+        'SELECT id, email, name FROM users WHERE id = $1',
+        [userId]
+      );
+      return result.rows[0];
     }
     return null;
   } catch (error) {
@@ -89,9 +95,41 @@ declare global {
       user?: {
         id: string;
         username: string;
-        role: 'shop_manager' | 'system_admin';
+        role: 'shop_manager' | 'system_admin' | 'user';
         shopId?: string;
       };
     }
   }
 }
+
+// 利用者アプリ向け（'user'ロールも許可）
+export const authenticateUserToken = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'temp-development-secret') as JWTPayload;
+
+    if (!['user', 'shop_manager', 'system_admin'].includes(decoded.role)) {
+      return res.status(401).json({ error: 'Invalid role' });
+    }
+
+    const user = await getUserById(decoded.userId, decoded.role);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid token - user not found' });
+    }
+
+    req.user = {
+      id: decoded.userId,
+      username: (decoded as any).username || (decoded as any).email || 'user',
+      role: decoded.role,
+      shopId: decoded.shopId
+    } as any;
+
+    next();
+  } catch (error) {
+    console.error('Authentication error (user):', error);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};

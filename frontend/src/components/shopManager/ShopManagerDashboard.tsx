@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { apiService } from '../../services/api';
+import { Utensils, Coffee, Wine, Store } from 'lucide-react';
 
 interface Shop {
   id: string;
@@ -22,15 +23,16 @@ export const ShopManagerDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const getCategoryIcon = (category: string) => {
+    const iconProps = { className: 'w-6 h-6 text-blue-600' } as const;
     switch (category) {
       case 'restaurant':
-        return '🍽️';
+        return <Utensils {...iconProps} />;
       case 'cafe':
-        return '☕';
+        return <Coffee {...iconProps} />;
       case 'izakaya':
-        return '🍶';
+        return <Wine {...iconProps} />;
       default:
-        return '🏪';
+        return <Store {...iconProps} />;
     }
   };
 
@@ -102,7 +104,7 @@ export const ShopManagerDashboard: React.FC = () => {
         <CardHeader>
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-2xl">{getCategoryIcon(shop.category)}</span>
+              {getCategoryIcon(shop.category)}
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">{shop.name}</h2>
@@ -135,6 +137,7 @@ export const ShopManagerDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
     </div>
   );
 };

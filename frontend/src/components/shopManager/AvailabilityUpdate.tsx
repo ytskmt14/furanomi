@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
@@ -28,36 +27,6 @@ export const AvailabilityUpdate: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [staffAccessInfo, setStaffAccessInfo] = useState<StaffAccessInfo | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
-
-  const getAvailabilityText = (status: string) => {
-    switch (status) {
-      case 'available':
-        return '空きあり';
-      case 'busy':
-        return '混雑';
-      case 'full':
-        return '満席';
-      case 'closed':
-        return '営業時間外';
-      default:
-        return '不明';
-    }
-  };
-
-  const getAvailabilityColor = (status: string) => {
-    switch (status) {
-      case 'available':
-        return '#10b981'; // green-500
-      case 'busy':
-        return '#f59e0b'; // amber-500
-      case 'full':
-        return '#ef4444'; // red-500
-      case 'closed':
-        return '#6b7280'; // gray-500
-      default:
-        return '#6b7280';
-    }
-  };
 
   // 店舗情報とスタッフ用アクセス情報を取得
   useEffect(() => {
@@ -230,19 +199,11 @@ export const AvailabilityUpdate: React.FC = () => {
       {/* 空き状況選択 */}
       <Card className="shadow-sm">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">空き状況を選択</h3>
-              <p className="text-sm text-gray-600">
-                現在の混雑状況に最も近いものを選択してください
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">現在の状況</p>
-              <Badge className={`mt-1 ${getAvailabilityColor(selectedStatus)}`}>
-                {getAvailabilityText(selectedStatus)}
-              </Badge>
-            </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">空き状況を選択</h3>
+            <p className="text-sm text-gray-600">
+              現在の混雑状況に最も近いものを選択してください
+            </p>
           </div>
         </CardHeader>
         <CardContent>
@@ -272,36 +233,36 @@ export const AvailabilityUpdate: React.FC = () => {
               </button>
             ))}
           </div>
+
+          {/* 更新ボタン */}
+          <div className="flex justify-center pt-6 border-t border-gray-200 mt-6">
+            <Button
+              onClick={handleStatusUpdate}
+              disabled={isUpdating}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg transition-colors"
+            >
+              {isUpdating ? (
+                <div className="flex items-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  更新中...
+                </div>
+              ) : (
+                '空き状況を更新'
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
-
-      {/* 更新ボタン */}
-      <div className="flex justify-center">
-        <Button
-          onClick={handleStatusUpdate}
-          disabled={isUpdating}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg transition-colors"
-        >
-          {isUpdating ? (
-            <div className="flex items-center">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              更新中...
-            </div>
-          ) : (
-            '空き状況を更新'
-          )}
-        </Button>
-      </div>
 
       {/* スタッフ用QRコード管理 */}
       <Card className="shadow-sm">
         <CardHeader>
           <h3 className="text-lg font-semibold text-gray-900">スタッフ用QRコード</h3>
-          <p className="text-sm text-gray-600">
-            スタッフが空き状況を更新するためのQRコードと合言葉を管理します
-          </p>
         </CardHeader>
         <CardContent className="space-y-6">
+          <p className="text-sm text-gray-600 -mt-4 mb-4">
+            スタッフが空き状況を更新するためのQRコードと合言葉を管理します
+          </p>
           {/* QRコード表示 */}
           <div className="flex flex-col items-center space-y-4">
             <div className="bg-white p-4 rounded-lg border border-gray-200">

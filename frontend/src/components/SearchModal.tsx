@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Shop, ShopCategory, AvailabilityStatus } from '../types/shop';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
+import { Search as SearchIcon, X, Utensils, Coffee, Wine, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -20,16 +21,16 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   const [selectedCategories, setSelectedCategories] = useState<ShopCategory[]>([]);
   const [selectedAvailability, setSelectedAvailability] = useState<AvailabilityStatus[]>([]);
 
-  const categories: { value: ShopCategory; label: string; icon: string }[] = [
-    { value: 'restaurant', label: 'レストラン', icon: '🍽️' },
-    { value: 'cafe', label: 'カフェ', icon: '☕' },
-    { value: 'izakaya', label: '居酒屋', icon: '🍶' },
+  const categories: { value: ShopCategory; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+    { value: 'restaurant', label: 'レストラン', Icon: Utensils },
+    { value: 'cafe', label: 'カフェ', Icon: Coffee },
+    { value: 'izakaya', label: '居酒屋', Icon: Wine },
   ];
 
-  const availabilityOptions: { value: AvailabilityStatus; label: string; icon: string }[] = [
-    { value: 'available', label: '空きあり', icon: '🟢' },
-    { value: 'busy', label: '混雑', icon: '🟡' },
-    { value: 'full', label: '満席', icon: '🔴' },
+  const availabilityOptions: { value: AvailabilityStatus; label: string; Icon: React.ComponentType<{ className?: string }> ; color: string }[] = [
+    { value: 'available', label: '空きあり', Icon: CheckCircle, color: 'text-green-600' },
+    { value: 'busy', label: '混雑', Icon: AlertTriangle, color: 'text-yellow-600' },
+    { value: 'full', label: '満席', Icon: XCircle, color: 'text-red-600' },
   ];
 
   const handleSearch = () => {
@@ -91,11 +92,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            🔍 店舗を検索
+          <h2 className="text-xl font-semibold text-gray-900 inline-flex items-center gap-2">
+            <SearchIcon className="w-5 h-5" /> 店舗を検索
           </h2>
           <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-            ✕
+            <X className="w-4 h-4" />
           </Button>
         </CardHeader>
         
@@ -130,7 +131,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {category.icon} {category.label}
+                  <span className="inline-flex items-center gap-2">
+                    <category.Icon className="w-4 h-4" /> {category.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -152,7 +155,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {option.icon} {option.label}
+                  <span className="inline-flex items-center gap-2">
+                    <option.Icon className={`w-4 h-4 ${option.color}`} /> {option.label}
+                  </span>
                 </button>
               ))}
             </div>

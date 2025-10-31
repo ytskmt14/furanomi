@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
 import { LoginModal } from './auth/LoginModal';
 import { RegisterModal } from './auth/RegisterModal';
+import { CalendarDays, User as UserIcon, MapPin, Clock } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -107,9 +108,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
                     to="/user/reservations" 
                     className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                    <CalendarDays className="w-6 h-6" />
                     {pendingReservationsCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                         {pendingReservationsCount}
@@ -123,10 +122,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                       className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded-lg transition-colors"
                     >
+                      <UserIcon className="w-4 h-4" />
                       <span>{user.name} さん</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     {isUserMenuOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
@@ -135,14 +133,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
                           onClick={() => setIsUserMenuOpen(false)}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                         >
-                          📅 マイ予約
+                          <span className="inline-flex items-center gap-2"><CalendarDays className="w-4 h-4" />マイ予約</span>
                         </Link>
                         <Link
                           to="/user/profile"
                           onClick={() => setIsUserMenuOpen(false)}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                         >
-                          👤 プロフィール
+                          <span className="inline-flex items-center gap-2"><UserIcon className="w-4 h-4" />プロフィール</span>
                         </Link>
                         <button
                           onClick={() => {
@@ -191,15 +189,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, userLocation }) => {
           <div className="max-w-8xl mx-auto px-4 py-2">
             <div className="flex items-center justify-between text-xs text-gray-500">
               <div className="flex items-center space-x-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                </svg>
+                <MapPin className="w-3 h-3" />
                 <span>{locationText}</span>
               </div>
               <div className="flex items-center space-x-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                </svg>
+                <Clock className="w-3 h-3" />
                 <span>{formattedDate}</span>
               </div>
             </div>

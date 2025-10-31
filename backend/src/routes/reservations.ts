@@ -3,6 +3,7 @@ import { db } from '../config/database';
 import { asyncHandler } from '../middleware/errorHandler';
 import jwt from 'jsonwebtoken';
 import webpush from 'web-push';
+import { isFeatureEnabled } from './shopFeatures';
 
 const router = express.Router();
 
@@ -35,6 +36,13 @@ async function sendReservationNotificationToShopManager(
     vapidPublicKey,
     vapidPrivateKey
   );
+
+  // 予約機能が有効かチェック（予約機能が無効な店舗には通知を送信しない）
+  const reservationEnabled = await isFeatureEnabled(shopId, 'reservation');
+  if (!reservationEnabled) {
+    console.log(`Reservation feature is disabled for shop ${shopId}, skipping notification`);
+    return;
+  }
 
   // 店舗のshop_manager_idを取得
   const shopResult = await db.query(
@@ -133,6 +141,12 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
   const shopResult = await db.query('SELECT id, name FROM shops WHERE id = $1', [shopId]);
   if (shopResult.rows.length === 0) {
     return res.status(404).json({ error: 'Shop not found' });
+  }
+
+  // 予約機能が有効かチェック
+  const reservationEnabled = await isFeatureEnabled(shopId, 'reservation');
+  if (!reservationEnabled) {
+    return res.status(403).json({ error: 'Reservation feature is not enabled for this shop' });
   }
 
   // 予約作成

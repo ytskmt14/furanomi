@@ -6,6 +6,7 @@ import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { apiService } from '../../services/api';
 import { PostalCodeInput } from './PostalCodeInput';
+import { ShopFeatureSettingsModal } from './ShopFeatureSettingsModal';
 import { Shop } from '../../types/shop';
 
 interface ShopManager {
@@ -29,6 +30,12 @@ export const ShopsManagement: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  const [featureSettingsShop, setFeatureSettingsShop] = useState<{ id: string; name: string } | null>(null);
+  const [featuresMap, setFeaturesMap] = useState<Record<string, Record<string, boolean>>>({});
+  const FEATURE_LABELS: Record<string, string> = {
+    reservation: '予約機能',
+    // 将来追加: coupon: 'クーポン', loyalty_points: 'ポイント' など
+  };
 
   // フォーム状態
   const [formData, setFormData] = useState({
@@ -87,6 +94,24 @@ export const ShopsManagement: React.FC = () => {
       ]);
       setShops(shopsData.shops);
       setShopManagers(managersData);
+      // 追加機能の利用状況を並列取得
+      try {
+        const results = await Promise.all(
+          (shopsData.shops || []).map(async (s: Shop) => {
+            try {
+              const res = await apiService.getShopFeatures(s.id);
+              return [s.id, res.features || {}] as const;
+            } catch {
+              return [s.id, {}] as const;
+            }
+          })
+        );
+        const map: Record<string, Record<string, boolean>> = {};
+        results.forEach(([id, feats]) => { map[id] = feats; });
+        setFeaturesMap(map);
+      } catch (e) {
+        console.warn('Failed to load features for shops', e);
+      }
     } catch (err) {
       console.error('Failed to fetch data:', err);
       setError('データの取得に失敗しました');
@@ -179,7 +204,9 @@ export const ShopsManagement: React.FC = () => {
       if (editingShop) {
         await apiService.updateShopBySystemAdmin(editingShop.id, formData);
       } else {
-        await apiService.createShop(formData);
+        // 新規作成時はbusiness_hoursを送らない（デフォルトでNULLになる）
+        const { business_hours, ...createData } = formData;
+        await apiService.createShop(createData);
       }
 
       setIsModalOpen(false);
@@ -353,22 +380,45 @@ export const ShopsManagement: React.FC = () => {
                     <span className="flex-1">{shop.phone}</span>
                   </div>
                 )}
+                {/* 追加機能（一覧表示） */}
+                <div className="flex items-start">
+                  <div className="flex flex-wrap gap-2">
+                    {Object.keys(FEATURE_LABELS).map((key) => {
+                      const enabled = !!(featuresMap[shop.id] && featuresMap[shop.id][key]);
+                      const label = FEATURE_LABELS[key] || key;
+                      return (
+                        <Badge key={key} className={`${enabled ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'} text-xs`}>
+                          {label}
+                          <span className={`ml-1 ${enabled ? 'text-blue-700' : 'text-gray-400'}`}></span>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
-              <div className="flex space-x-2 mt-4">
+              <div className="grid grid-cols-3 gap-2 mt-4">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleEditShop(shop)}
-                  className="flex-1 text-xs"
+                  className="text-xs"
                 >
                   編集
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => setFeatureSettingsShop({ id: shop.id, name: shop.name })}
+                  className="text-xs"
+                >
+                  ⚙️ 機能
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleDeleteShop(shop.id)}
-                  className="flex-1 text-red-600 hover:text-red-700 text-xs"
+                  className="text-red-600 hover:text-red-700 text-xs"
                 >
                   削除
                 </Button>
@@ -666,6 +716,16 @@ export const ShopsManagement: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 機能設定モーダル */}
+      {featureSettingsShop && (
+        <ShopFeatureSettingsModal
+          shopId={featureSettingsShop.id}
+          shopName={featureSettingsShop.name}
+          isOpen={!!featureSettingsShop}
+          onClose={() => setFeatureSettingsShop(null)}
+        />
       )}
     </div>
   );

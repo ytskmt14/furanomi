@@ -341,6 +341,14 @@ class ApiService {
     return this.request<any>('/user-auth/me');
   }
 
+  // 利用者プロフィール更新（ニックネームのみ）
+  async updateUserProfile(data: { name: string }): Promise<any> {
+    return this.request<any>('/user-auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   // 利用者認証：パスワードリセット要求
   async requestPasswordReset(email: string): Promise<any> {
     return this.request<any>('/user-auth/password-reset/request', {
@@ -354,6 +362,27 @@ class ApiService {
     return this.request<any>('/user-auth/password-reset/confirm', {
       method: 'POST',
       body: JSON.stringify({ token, newPassword }),
+    });
+  }
+
+  // 店舗機能設定：取得
+  async getShopFeatures(shopId: string): Promise<{ features: Record<string, boolean> }> {
+    return this.request<{ features: Record<string, boolean> }>(`/shops/${shopId}/features`);
+  }
+
+  // 店舗機能設定：更新（システム管理者のみ）
+  async updateShopFeature(shopId: string, featureName: string, enabled: boolean): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/shops/${shopId}/features`, {
+      method: 'PUT',
+      body: JSON.stringify({ featureName, enabled }),
+    });
+  }
+
+  // 店舗機能設定：一括更新（システム管理者のみ）
+  async updateShopFeaturesBulk(shopId: string, features: Record<string, boolean>): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/shops/${shopId}/features/bulk`, {
+      method: 'PUT',
+      body: JSON.stringify({ features }),
     });
   }
 
@@ -392,6 +421,41 @@ class ApiService {
   async rejectReservation(id: string): Promise<any> {
     return this.request<any>(`/reservations/${id}/reject`, {
       method: 'PUT',
+    });
+  }
+
+  // --- お気に入り（利用者） ---
+  async getFavorites(): Promise<{ favorites: string[] }> {
+    return this.request<{ favorites: string[] }>(`/user/favorites`);
+  }
+
+  async addFavorite(shopId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/user/favorites/${shopId}`, {
+      method: 'POST',
+    });
+  }
+
+  async removeFavorite(shopId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/user/favorites/${shopId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // --- 利用者向けPush購読 ---
+  async getUserVapidPublicKey(): Promise<{ publicKey: string }> {
+    return this.request<{ publicKey: string }>(`/user/notifications/vapid-public-key`);
+  }
+
+  async subscribeUserPush(data: { endpoint: string; p256dh: string; auth: string }): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/user/notifications/subscribe`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async unsubscribeUserPush(): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/user/notifications/unsubscribe`, {
+      method: 'POST',
     });
   }
 }

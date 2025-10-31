@@ -76,6 +76,7 @@ export interface ShopFormData {
   category: 'restaurant' | 'cafe' | 'izakaya';
   business_hours: BusinessHours;
   image_url: string;
+  is_active?: boolean;
 }
 
 export interface AvailabilityFormData {

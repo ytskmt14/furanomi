@@ -7,6 +7,8 @@ import { FileUpload } from '../ui/file-upload';
 import { ShopFormData, BusinessHours } from '../../types/shopManager';
 import { apiService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
+import { Store, Clock, Phone, Wine, Coffee, Utensils, ChevronDown } from 'lucide-react';
+import { Switch } from '../ui/switch';
 
 interface Shop {
   id: string;
@@ -18,6 +20,7 @@ interface Shop {
   category: string;
   business_hours: any;
   image_url: string;
+  is_active?: boolean;
 }
 
 export const ShopInfoEdit: React.FC = () => {
@@ -43,6 +46,7 @@ export const ShopInfoEdit: React.FC = () => {
       sunday: { open: '', close: '' }
     },
     image_url: '',
+    is_active: false,
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -63,6 +67,7 @@ export const ShopInfoEdit: React.FC = () => {
           category: shopData.category,
           business_hours: shopData.business_hours || {},
           image_url: shopData.image_url || '',
+          is_active: shopData.is_active || false,
         });
       } catch (err) {
         console.error('Failed to fetch shop:', err);
@@ -158,6 +163,7 @@ export const ShopInfoEdit: React.FC = () => {
         category: updatedShopData.category,
         business_hours: updatedShopData.business_hours || {},
         image_url: updatedShopData.image_url || '',
+        is_active: updatedShopData.is_active || false,
       });
       
       toast({
@@ -165,22 +171,43 @@ export const ShopInfoEdit: React.FC = () => {
         description: "店舗情報を保存しました！",
         variant: "success",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save error:', error);
+      const errorMessage = error?.message || '保存に失敗しました。もう一度お試しください。';
+      
       toast({
         title: "保存失敗",
-        description: "保存に失敗しました。もう一度お試しください。",
+        description: errorMessage,
         variant: "destructive",
       });
+      
+      // エラーが発生した場合は店舗情報を再取得して状態をリセット
+      try {
+        const updatedShopData = await apiService.getMyShop();
+        setShop(updatedShopData);
+        setFormData({
+          name: updatedShopData.name,
+          description: updatedShopData.description || '',
+          address: updatedShopData.address,
+          phone: updatedShopData.phone || '',
+          email: updatedShopData.email || '',
+          category: updatedShopData.category,
+          business_hours: updatedShopData.business_hours || {},
+          image_url: updatedShopData.image_url || '',
+          is_active: updatedShopData.is_active || false,
+        });
+      } catch (refreshError) {
+        console.error('Failed to refresh shop data:', refreshError);
+      }
     } finally {
       setIsSaving(false);
     }
   };
 
   const tabs = [
-    { id: 'basic', label: '基本情報', icon: '🏪' },
-    { id: 'hours', label: '営業時間', icon: '🕐' },
-    { id: 'contact', label: '連絡先', icon: '📞' },
+    { id: 'basic', label: '基本情報', icon: <Store className="w-4 h-4" /> },
+    { id: 'hours', label: '営業時間', icon: <Clock className="w-4 h-4" /> },
+    { id: 'contact', label: '連絡先', icon: <Phone className="w-4 h-4" /> },
   ];
 
   if (loading) {
@@ -232,7 +259,7 @@ export const ShopInfoEdit: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm inline-flex items-center ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -300,17 +327,27 @@ export const ShopInfoEdit: React.FC = () => {
               <Label htmlFor="category" className="text-sm font-medium text-gray-700">
                 カテゴリ *
               </Label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="izakaya">🍶 居酒屋</option>
-                <option value="cafe">☕ カフェ</option>
-                <option value="restaurant">🍽️ レストラン</option>
-              </select>
+              <div className="mt-1 relative">
+                <select
+                  id="category"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className="block w-full border border-gray-300 rounded-md pl-10 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+                >
+                  <option value="izakaya">居酒屋</option>
+                  <option value="cafe">カフェ</option>
+                  <option value="restaurant">レストラン</option>
+                </select>
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  {formData.category === 'izakaya' && <Wine className="w-4 h-4 text-gray-500" />}
+                  {formData.category === 'cafe' && <Coffee className="w-4 h-4 text-gray-500" />}
+                  {formData.category === 'restaurant' && <Utensils className="w-4 h-4 text-gray-500" />}
+                </div>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                </div>
+              </div>
             </div>
 
             <div>
@@ -323,6 +360,28 @@ export const ShopInfoEdit: React.FC = () => {
                   preview={formData.image_url}
                   maxSize={5 * 1024 * 1024} // 5MB
                   acceptedTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp']}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between py-4 border-t border-gray-200">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">
+                    利用者アプリへの公開
+                  </Label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {shop?.is_active 
+                      ? '一度公開した店舗は非公開に変更できません。システム管理者にお問い合わせください。'
+                      : '必要な情報を設定したら、こちらを有効にすることで利用者アプリに公開されます。'}
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.is_active || false}
+                  onCheckedChange={(checked) => {
+                    setFormData(prev => ({ ...prev, is_active: checked }));
+                  }}
+                  disabled={shop?.is_active === true}
                 />
               </div>
             </div>

@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { ShopList } from './components/ShopList';
 import { MapView } from './components/MapView';
-import { ShopDetail } from './components/ShopDetail';
 import { SearchModal } from './components/SearchModal';
 import { FloatingSearchButton } from './components/FloatingSearchButton';
 import { LoadingList } from './components/Loading';
@@ -14,6 +13,7 @@ import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { apiService } from './services/api';
 import { Shop } from './types/shop';
 import { Button } from './components/ui/button';
+import { List, Map } from 'lucide-react';
 import { Toaster } from './components/ui/toaster';
 import { UserProfile } from './components/auth/UserProfile';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -27,7 +27,7 @@ const MyReservations = lazy(() => import('./components/reservation/MyReservation
 
 // 利用者用アプリ
 const UserApp: React.FC = () => {
-  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+  // 店舗詳細モーダルは廃止
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [shops, setShops] = useState<Shop[]>([]);
@@ -36,12 +36,8 @@ const UserApp: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
 
-  const handleShopSelect = useCallback((shop: Shop) => {
-    setSelectedShop(shop);
-  }, []);
-
-  const handleCloseDetail = useCallback(() => {
-    setSelectedShop(null);
+  const handleShopSelect = useCallback((_shop: Shop) => {
+    // modal削除に伴い何もしない
   }, []);
 
   const handleSearchOpen = useCallback(() => {
@@ -131,8 +127,8 @@ const UserApp: React.FC = () => {
 
   // メモ化されたコンポーネント
   const shopListComponent = useMemo(() => (
-    <ShopList shops={filteredShops} onShopSelect={handleShopSelect} />
-  ), [filteredShops, handleShopSelect]);
+    <ShopList shops={filteredShops} />
+  ), [filteredShops]);
 
   const mapViewComponent = useMemo(() => (
     <MapView 
@@ -155,7 +151,7 @@ const UserApp: React.FC = () => {
                 : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm'
             }`}
           >
-            📋 リスト表示
+            <span className="inline-flex items-center gap-2"><List className="w-4 h-4" /> リスト表示</span>
           </Button>
           <Button
             variant={viewMode === 'map' ? 'default' : 'outline'}
@@ -166,7 +162,7 @@ const UserApp: React.FC = () => {
                 : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm'
             }`}
           >
-            🗺️ 地図表示
+            <span className="inline-flex items-center gap-2"><Map className="w-4 h-4" /> 地図表示</span>
           </Button>
         </div>
 
@@ -189,9 +185,7 @@ const UserApp: React.FC = () => {
           </>
         )}
 
-        {selectedShop && (
-          <ShopDetail shop={selectedShop} onClose={handleCloseDetail} />
-        )}
+        {/* 店舗詳細モーダルは削除 */}
 
         <SearchModal
           isOpen={isSearchOpen}
@@ -268,8 +262,7 @@ function App() {
   }
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <Router>
+      <Router>
           <Routes>
             {/* ランディングページ */}
             <Route path="/lp" element={
@@ -279,26 +272,34 @@ function App() {
             } />
             
             {/* 利用者用アプリ（ルート表示） */}
-            <Route path="/user" element={<UserApp />} />
+            <Route path="/user" element={
+              <AuthProvider>
+                <UserApp />
+              </AuthProvider>
+            } />
             
             {/* 利用者用プロフィール（認証必須） */}
             <Route path="/user/profile" element={
-              <ProtectedRoute>
-                <Layout userLocation={null}>
-                  <UserProfile />
-                </Layout>
-              </ProtectedRoute>
+              <AuthProvider>
+                <ProtectedRoute>
+                  <Layout userLocation={null}>
+                    <UserProfile />
+                  </Layout>
+                </ProtectedRoute>
+              </AuthProvider>
             } />
             
             {/* 利用者用アプリ：マイ予約 */}
             <Route path="/user/reservations" element={
-              <ProtectedRoute>
-                <Layout userLocation={null}>
-                  <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
-                    <MyReservations />
-                  </Suspense>
-                </Layout>
-              </ProtectedRoute>
+              <AuthProvider>
+                <ProtectedRoute>
+                  <Layout userLocation={null}>
+                    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
+                      <MyReservations />
+                    </Suspense>
+                  </Layout>
+                </ProtectedRoute>
+              </AuthProvider>
             } />
             
             {/* 店舗管理者用アプリ（Code Splitting） */}
@@ -328,7 +329,6 @@ function App() {
           <Toaster />
           <OfflineIndicator />
         </Router>
-      </AuthProvider>
     </ErrorBoundary>
   );
 }

@@ -336,20 +336,20 @@ router.get('/dashboard/stats', authenticateToken, requireSystemAdmin, asyncHandl
     WHERE s.is_active = true
   `);
   
-  // 最近追加された店舗
-  const recentShops = await db.query(`
-    SELECT id, name, address, category, created_at
-    FROM shops 
-    WHERE is_active = true
-    ORDER BY created_at DESC
-    LIMIT 5
+  // 拡張機能の利用状況（ONの件数を機能別に集計）
+  const featuresUsage = await db.query(`
+    SELECT feature_name, COUNT(*) AS enabled_count
+    FROM shop_feature_settings
+    WHERE enabled = true
+    GROUP BY feature_name
+    ORDER BY feature_name ASC
   `);
 
   res.json({
     totalShops: parseInt(shopCount.rows[0].count),
     totalManagers: parseInt(managerCount.rows[0].count),
     activeShops: parseInt(activeShopCount.rows[0].count),
-    recentShops: recentShops.rows
+    featuresUsage: featuresUsage.rows
   });
 }));
 

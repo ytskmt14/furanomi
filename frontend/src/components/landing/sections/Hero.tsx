@@ -1,5 +1,6 @@
 import { Button } from '../../ui/button';
 import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 
 export const Hero: React.FC = () => {
   const navigate = useNavigate();
@@ -38,7 +39,9 @@ export const Hero: React.FC = () => {
               className="text-lg px-8 py-6 bg-blue-600 hover:bg-blue-700 shadow-lg"
               onClick={() => navigate('/user')}
             >
-              🔍 今すぐ使ってみる
+              <span className="inline-flex items-center gap-2">
+                <Search className="w-5 h-5" /> 今すぐ使ってみる
+              </span>
             </Button>
           </div>
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useToast } from '../../hooks/use-toast';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
+import { apiService } from '../../services/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -15,6 +16,7 @@ export const PushNotificationSettings: React.FC = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
+  const [reservationEnabled, setReservationEnabled] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -25,6 +27,18 @@ export const PushNotificationSettings: React.FC = () => {
     } else {
       setIsSupported(false);
     }
+
+    // 店舗情報と予約機能の状態を取得
+    const fetchShopAndFeatures = async () => {
+      try {
+        const shopData = await apiService.getMyShop();
+        const featuresResponse = await apiService.getShopFeatures(shopData.id);
+        setReservationEnabled(featuresResponse.features.reservation === true);
+      } catch (error) {
+        console.error('Failed to fetch shop features:', error);
+      }
+    };
+    fetchShopAndFeatures();
   }, []);
 
   const checkSubscriptionStatus = async () => {
@@ -143,6 +157,18 @@ export const PushNotificationSettings: React.FC = () => {
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">プッシュ通知設定</h2>
         <p className="text-gray-600">お使いのブラウザはプッシュ通知をサポートしていません。</p>
+      </Card>
+    );
+  }
+
+  if (!reservationEnabled) {
+    return (
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-4">プッシュ通知設定</h2>
+        <p className="text-gray-600">予約機能が有効になっている場合のみ、プッシュ通知をご利用いただけます。</p>
+        <p className="text-sm text-gray-500 mt-2">
+          予約機能を有効にするには、システム管理者にお問い合わせください。
+        </p>
       </Card>
     );
   }

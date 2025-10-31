@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from '../config/database';
 import { asyncHandler } from '../middleware/errorHandler';
+import { authenticateUserToken } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -138,6 +139,26 @@ router.post('/logout', (req: Request, res: Response) => {
   res.clearCookie('token');
   res.json({ message: 'Logout successful' });
 });
+
+// プロフィール更新（ニックネーム/電話）
+router.put('/profile', authenticateUserToken, asyncHandler(async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const { name } = req.body;
+
+  if (typeof name !== 'string' || name.trim().length === 0) {
+    return res.status(400).json({ error: 'name is required' });
+  }
+
+  const result = await db.query(
+    'UPDATE users SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, email, name, phone',
+    [name.trim(), userId]
+  );
+
+  res.json({
+    message: 'Profile updated',
+    user: result.rows[0]
+  });
+}));
 
 // 現在のユーザー情報取得
 router.get('/me', asyncHandler(async (req: Request, res: Response) => {

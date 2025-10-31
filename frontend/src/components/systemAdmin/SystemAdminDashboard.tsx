@@ -7,7 +7,7 @@ interface DashboardStats {
   totalShops: number;
   totalManagers: number;
   activeShops: number;
-  recentShops: any[];
+  featuresUsage: { feature_name: string; enabled_count: number }[];
 }
 
 export const SystemAdminDashboard: React.FC = () => {
@@ -115,42 +115,24 @@ export const SystemAdminDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* 最近追加された店舗 */}
+      {/* 拡張機能の利用状況 */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">最近追加された店舗</CardTitle>
+          <CardTitle className="text-lg font-semibold text-gray-900">拡張機能の利用状況</CardTitle>
         </CardHeader>
         <CardContent>
-          {stats.recentShops.length > 0 ? (
-            <div className="space-y-4">
-              {stats.recentShops.map((shop) => (
-                <div key={shop.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <span className="text-blue-600 font-semibold text-sm">
-                        {shop.category === 'restaurant' ? '🍽️' : 
-                         shop.category === 'cafe' ? '☕' : '🍺'}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{shop.name}</h3>
-                      <p className="text-sm text-gray-600">{shop.address}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className="bg-green-100 text-green-800">
-                      新規登録
-                    </Badge>
-                    <span className="text-sm text-gray-500">
-                      {new Date(shop.created_at).toLocaleDateString('ja-JP')}
-                    </span>
-                  </div>
+          {(!stats.featuresUsage || stats.featuresUsage.length === 0) ? (
+            <div className="text-center py-8 text-gray-500">利用中の拡張機能はありません</div>
+          ) : (
+            <div className="space-y-3">
+              {stats.featuresUsage.map((f) => (
+                <div key={f.feature_name} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">
+                    {f.feature_name === 'reservation' ? '予約機能' : f.feature_name}
+                  </span>
+                  <Badge className="bg-blue-100 text-blue-800">{f.enabled_count}</Badge>
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              最近追加された店舗はありません
             </div>
           )}
         </CardContent>

@@ -14,6 +14,9 @@ import { systemRoutes } from './routes/system';
 import staffRoutes from './routes/staff';
 import { reservationRoutes } from './routes/reservations';
 import { notificationRoutes } from './routes/notifications';
+import { shopFeatureRoutes } from './routes/shopFeatures';
+import { userNotificationRoutes } from './routes/userNotifications';
+import { userFavoritesRoutes } from './routes/userFavorites';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { performanceMiddleware, getPerformanceStats } from './middleware/performance';
@@ -78,6 +81,9 @@ app.use('/api/system', systemRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/user/notifications', userNotificationRoutes);
+app.use('/api/shops', shopFeatureRoutes);
+app.use('/api/user/favorites', userFavoritesRoutes);
 
 // エラーハンドリング
 app.use(errorHandler);

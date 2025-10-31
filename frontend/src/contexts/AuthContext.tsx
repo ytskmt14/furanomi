@@ -48,7 +48,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.getCurrentUserAuth();
       setUser(response.user);
     } catch (error) {
-      console.error('Failed to load user:', error);
+      // 未ログイン（401）は正常系として扱う：エラーを出さずに匿名として続行
+      const message = (error as any)?.message || '';
+      const isUnauthenticated = message.includes('Authentication required') || message.includes('401');
+      if (!isUnauthenticated) {
+        console.warn('Failed to load user:', error);
+      }
       setUser(null);
     } finally {
       setIsLoading(false);

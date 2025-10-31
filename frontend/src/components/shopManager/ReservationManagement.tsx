@@ -44,6 +44,21 @@ export const ReservationManagement: React.FC = () => {
       setShop(shopData);
 
       if (shopData && shopData.id) {
+        // 予約機能が有効かチェック
+        try {
+          const featuresResponse = await apiService.getShopFeatures(shopData.id);
+          if (featuresResponse.features.reservation !== true) {
+            setError('この店舗では予約機能をご利用いただけません');
+            setLoading(false);
+            return;
+          }
+        } catch (featureError) {
+          console.error('Failed to check reservation feature:', featureError);
+          setError('予約機能の確認に失敗しました');
+          setLoading(false);
+          return;
+        }
+
         // 予約一覧を取得
         const reservationData = await apiService.getShopReservations(shopData.id);
         setReservations(reservationData.reservations || []);

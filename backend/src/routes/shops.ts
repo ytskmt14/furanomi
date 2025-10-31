@@ -180,6 +180,10 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
         s.id, s.name, s.description, s.address, 
         s.category, s.business_hours, 
         s.image_url,
+        s.is_active,
+        s.shop_manager_id,
+        sm.first_name AS manager_first_name,
+        sm.last_name AS manager_last_name,
         sa.status as availability_status,
         CASE 
           WHEN sa.status = 'closed' THEN 'closed'
@@ -187,12 +191,22 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
           ELSE COALESCE(sa.status, 'unknown')
         END as final_availability_status
       FROM shops s
+      LEFT JOIN shop_managers sm ON s.shop_manager_id = sm.id
       LEFT JOIN shop_availability sa ON s.id = sa.shop_id
       WHERE s.is_active = true${whereConditions.length > 0 ? ` AND ${whereConditions.join(' AND ')}` : ''}
       ORDER BY 
-        CASE WHEN final_availability_status = 'closed' THEN 1 ELSE 0 END ASC,
+        CASE WHEN COALESCE(sa.status, 'unknown') = 'closed' THEN 1 ELSE 0 END ASC,
         s.name ASC
     `;
+  }
+
+  // Debug: 出力するのは開発時のみ
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[GET /api/shops] executing SQL', {
+      hasLatLng: Boolean(lat && lng),
+      query: query.replace(/\s+/g, ' ').trim(),
+      params
+    });
   }
 
   const result = await db.query(query, params);
@@ -203,8 +217,8 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     if (!businessHours || typeof businessHours !== 'object') {
       return true; // 営業時間が設定されていない場合は営業中とみなす
     }
-
-    const now = new Date();
+    // JST（Asia/Tokyo）基準で現在時刻を算出
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const todayName = dayNames[now.getDay()];
     const todayHours = businessHours[todayName];
@@ -257,7 +271,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       return null;
     }
 
-    const now = new Date();
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const todayName = dayNames[now.getDay()];
     const tomorrowIndex = (now.getDay() + 1) % 7;
@@ -281,8 +295,27 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       category: row.category,
       business_hours: simplifyBusinessHours(row.business_hours),
       image_url: row.image_url,
-      availability_status: row.final_availability_status || row.availability_status
+      availability_status: row.final_availability_status || row.availability_status,
+      ...(row.is_active !== undefined ? { is_active: row.is_active } : {}),
+      ...(row.shop_manager_id ? { 
+        shop_manager: {
+          id: row.shop_manager_id,
+          first_name: row.manager_first_name,
+          last_name: row.manager_last_name
+        }
+      } : {})
     };
+
+    // 営業時間に基づく自動クローズ上書き（JST判定）
+    try {
+      const within = isWithinBusinessHours(row.business_hours);
+      if (!within) {
+        (shop as any).availability_status = 'closed';
+      }
+    } catch (e) {
+      // 判定に失敗しても落とさない
+      console.warn('Business hours check failed:', e);
+    }
 
     // 位置情報が提供された場合はSQLで計算済みの距離を使用
     if (lat && lng && typeof row.distance === 'number') {
@@ -367,7 +400,7 @@ router.get('/my-shop', authenticateToken, requireShopManager, asyncHandler(async
       sa.status as availability_status, sa.updated_at as availability_updated_at
     FROM shops s
     LEFT JOIN shop_availability sa ON s.id = sa.shop_id
-    WHERE s.shop_manager_id = $1 AND s.is_active = true
+    WHERE s.shop_manager_id = $1
     ORDER BY s.updated_at DESC
     LIMIT 1
   `, [managerId]);
@@ -404,11 +437,11 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 // 店舗情報更新（店舗管理者のみ）
 router.put('/:id', authenticateToken, requireShopManager, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, description, address, phone, email, category, business_hours, image_url } = req.body;
+  const { name, description, address, phone, email, category, business_hours, image_url, is_active } = req.body;
 
   // 店舗が自分のものかチェック
   const shopCheck = await db.query(
-    'SELECT shop_manager_id FROM shops WHERE id = $1',
+    'SELECT shop_manager_id, is_active as current_is_active FROM shops WHERE id = $1',
     [id]
   );
 
@@ -420,15 +453,24 @@ router.put('/:id', authenticateToken, requireShopManager, asyncHandler(async (re
     return res.status(403).json({ error: 'Access denied' });
   }
 
+  // 現在アクティブな場合は非アクティブに変更できない（店舗管理者のみ）
+  const currentIsActive = shopCheck.rows[0].current_is_active;
+  if (currentIsActive && is_active === false) {
+    return res.status(403).json({ error: '一度アクティブにした店舗は、店舗管理者が非アクティブに変更することはできません' });
+  }
+
+  // is_activeが指定されていない場合は現在の値を維持
+  const finalIsActive = is_active !== undefined ? is_active : currentIsActive;
+
   const result = await db.query(`
     UPDATE shops 
     SET 
       name = $1, description = $2, address = $3, phone = $4, 
       email = $5, category = $6, business_hours = $7, image_url = $8,
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = $9
+      is_active = $9, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $10
     RETURNING *
-  `, [name, description, address, phone, email, category, business_hours, image_url, id]);
+  `, [name, description, address, phone, email, category, business_hours, image_url, finalIsActive, id]);
 
   res.json(result.rows[0]);
 }));
@@ -445,15 +487,16 @@ router.post('/', authenticateToken, requireSystemAdmin, asyncHandler(async (req:
     return res.status(400).json({ error: '緯度経度が設定されていません。位置取得ボタンをクリックしてください。' });
   }
 
-  // business_hoursをJSONに変換
-  const businessHoursJson = JSON.stringify(business_hours);
+  // business_hoursは未設定の場合はNULL
+  const businessHoursJson = business_hours ? JSON.stringify(business_hours) : null;
 
+  // 店舗を作成（デフォルト: is_active = false, business_hours = NULL）
   const result = await db.query(`
     INSERT INTO shops (
       name, description, address, postal_code, formatted_address, place_id,
       phone, email, category, latitude, longitude,
-      business_hours, image_url, shop_manager_id, geocoded_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP)
+      business_hours, image_url, shop_manager_id, is_active, geocoded_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, false, CURRENT_TIMESTAMP)
     RETURNING *
   `, [
     name, description, address, postalCode, formattedAddress, placeId,
@@ -461,7 +504,16 @@ router.post('/', authenticateToken, requireSystemAdmin, asyncHandler(async (req:
     businessHoursJson, image_url, shop_manager_id
   ]);
 
-  res.status(201).json(result.rows[0]);
+  const shop = result.rows[0];
+
+  // 空き状況をデフォルトで'closed'（営業時間外）に設定
+  await db.query(`
+    INSERT INTO shop_availability (shop_id, status, updated_at)
+    VALUES ($1, 'closed', CURRENT_TIMESTAMP)
+    ON CONFLICT (shop_id) DO NOTHING
+  `, [shop.id]);
+
+  res.status(201).json(shop);
 }));
 
 // 店舗更新（システム管理者のみ）

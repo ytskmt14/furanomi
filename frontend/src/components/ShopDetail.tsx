@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shop } from '../types/shop';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Badge } from './ui/badge';
@@ -6,6 +6,8 @@ import { Button } from './ui/button';
 import { getAvailabilityText, getAvailabilityColorValue, getCategoryText, getCategoryIcon } from '../utils/helpers';
 import { CreateReservationModal } from './reservation/CreateReservationModal';
 import { useAuth } from '../contexts/AuthContext';
+import { apiService } from '../services/api';
+import { useToast } from '../hooks/use-toast';
 
 interface ShopDetailProps {
   shop: Shop | null;
@@ -14,7 +16,68 @@ interface ShopDetailProps {
 
 export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
+  const [reservationEnabled, setReservationEnabled] = useState(false);
   const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
+  
+  useEffect(() => {
+    const checkReservationFeature = async () => {
+      if (!shop?.id) return;
+      try {
+        const response = await apiService.getShopFeatures(shop.id);
+        setReservationEnabled(response.features.reservation === true);
+      } catch (error) {
+        console.error('Failed to check reservation feature:', error);
+        setReservationEnabled(false);
+      }
+    };
+    checkReservationFeature();
+  }, [shop?.id]);
+
+  // お気に入り初期状態を読み込み
+  useEffect(() => {
+    let mounted = true;
+    const loadFavorite = async () => {
+      if (!shop?.id || !isAuthenticated) {
+        setIsFavorite(false);
+        return;
+      }
+      try {
+        const res = await apiService.getFavorites();
+        if (!mounted) return;
+        setIsFavorite((res.favorites || []).includes(shop.id));
+      } catch (e) {
+        console.warn('Failed to load favorites in detail', e);
+      }
+    };
+    loadFavorite();
+    return () => { mounted = false; };
+  }, [shop?.id, isAuthenticated]);
+
+  const toggleFavorite = async () => {
+    if (!shop?.id) return;
+    if (!isAuthenticated) {
+      toast({ title: 'ログインが必要です', description: 'お気に入りはログイン後にご利用いただけます', variant: 'destructive' });
+      return;
+    }
+    if (favLoading) return;
+    setFavLoading(true);
+    try {
+      if (isFavorite) {
+        await apiService.removeFavorite(shop.id);
+        setIsFavorite(false);
+      } else {
+        await apiService.addFavorite(shop.id);
+        setIsFavorite(true);
+      }
+    } catch (error: any) {
+      toast({ title: 'エラー', description: error?.message || 'お気に入り更新に失敗しました', variant: 'destructive' });
+    } finally {
+      setFavLoading(false);
+    }
+  };
   
   console.log('ShopDetail rendered with shop:', shop);
   if (!shop) return null;
@@ -43,9 +106,16 @@ export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
           <h2 className="text-xl font-semibold text-gray-900">
             {getCategoryIcon(shop.category)} {shop.name}
           </h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-            ✕
-          </Button>
+          <div className="flex items-center gap-1">
+            {isAuthenticated && (
+              <Button variant="outline" size="sm" onClick={toggleFavorite} disabled={favLoading}>
+                {isFavorite ? '★ お気に入り' : '☆ お気に入り'}
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+              ✕
+            </Button>
+          </div>
         </CardHeader>
         
         <CardContent className="space-y-4">
@@ -98,7 +168,7 @@ export const ShopDetail: React.FC<ShopDetailProps> = ({ shop, onClose }) => {
           </div>
           
           <div className="flex gap-3 pt-4">
-            {shop.availability_status !== 'closed' && isAuthenticated && (
+            {shop.availability_status !== 'closed' && isAuthenticated && reservationEnabled && (
               <Button 
                 variant="default" 
                 className="flex-1"

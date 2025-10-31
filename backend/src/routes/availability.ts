@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { db } from '../config/database';
 import { asyncHandler } from '../middleware/errorHandler';
+import webpush from 'web-push';
 import { authenticateToken, requireShopManager } from '../middleware/auth';
 
 const router = express.Router();
@@ -38,6 +39,50 @@ router.put('/:shopId', authenticateToken, requireShopManager, asyncHandler(async
       updated_at = EXCLUDED.updated_at
     RETURNING *
   `, [shopId, status]);
+
+  // Push通知（お気に入りユーザー向け）
+  try {
+    const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+    if (vapidPublicKey && vapidPrivateKey) {
+      webpush.setVapidDetails('mailto:furanomi@example.com', vapidPublicKey, vapidPrivateKey);
+
+      // 店舗名取得
+      const shopRow = await db.query('SELECT name FROM shops WHERE id = $1', [shopId]);
+      const shopName = shopRow.rows?.[0]?.name || '店舗';
+
+      // 該当店舗をお気に入り登録しているユーザーの購読一覧を取得
+      const subs = await db.query(
+        `SELECT ups.endpoint, ups.p256dh, ups.auth
+         FROM user_push_subscriptions ups
+         JOIN user_favorites uf ON uf.user_id = ups.user_id
+         WHERE uf.shop_id = $1`,
+        [shopId]
+      );
+
+      const payload = JSON.stringify({
+        title: '空き状況が更新されました',
+        body: `${shopName}: ${status}`,
+        icon: '/icon-128x128.svg',
+        badge: '/icon-128x128.svg',
+        data: { url: `/user/shops/${shopId}` }
+      });
+
+      await Promise.all(subs.rows.map((row: any) => {
+        const subscription = {
+          endpoint: row.endpoint,
+          keys: { p256dh: row.p256dh, auth: row.auth }
+        } as any;
+        return webpush.sendNotification(subscription, payload).catch((err) => {
+          console.warn('User push failed (ignored):', err?.statusCode || err?.message);
+        });
+      }));
+    } else {
+      console.warn('VAPID keys not configured, skip user push');
+    }
+  } catch (e) {
+    console.error('Failed to send user push notifications:', e);
+  }
 
   res.json({
     message: 'Availability updated successfully',
