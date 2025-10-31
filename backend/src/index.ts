@@ -19,6 +19,7 @@ import { userFavoritesRoutes } from './routes/userFavorites';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { performanceMiddleware, getPerformanceStats } from './middleware/performance';
+import { closePool } from './config/database';
 
 // 環境変数の読み込み
 dotenv.config();
@@ -92,7 +93,7 @@ app.use((req, res) => {
 });
 
 // サーバー起動
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔐 Auth API: http://localhost:${PORT}/api/auth`);
@@ -103,5 +104,36 @@ app.listen(PORT, () => {
   console.log(`👥 Staff API: http://localhost:${PORT}/api/staff`);
   console.log(`📅 Reservations API: http://localhost:${PORT}/api/reservations`);
 });
+
+// Graceful shutdown処理
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n📡 ${signal} received. Starting graceful shutdown...`);
+  
+  // 新しい接続を受け付けない
+  server.close(async () => {
+    console.log('✅ HTTP server closed');
+    
+    // データベース接続プールを閉じる
+    try {
+      await closePool();
+      console.log('✅ Database connection pool closed');
+    } catch (error) {
+      console.error('❌ Error closing database pool:', error);
+    }
+    
+    console.log('✅ Graceful shutdown completed');
+    process.exit(0);
+  });
+  
+  // 強制終了タイムアウト（30秒）
+  setTimeout(() => {
+    console.error('⚠️  Forced shutdown after 30 seconds');
+    process.exit(1);
+  }, 30000);
+};
+
+// シグナルハンドラーを登録
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default app;
