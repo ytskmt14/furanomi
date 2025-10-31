@@ -27,8 +27,7 @@ const ShopManagerApp: React.FC = () => {
         
         {/* デフォルトリダイレクト */}
         <Route path="*" element={<Navigate to="/shop-manager/login" replace />} />
-      </Route>
-    </Routes>
+      </Routes>
     </ErrorBoundary>
   );
 };
