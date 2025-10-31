@@ -364,6 +364,8 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       description: shop.description,
       address: shop.address,
       category: shop.category,
+      latitude: (shop as any).latitude || null,
+      longitude: (shop as any).longitude || null,
       business_hours: shop.business_hours,
       image_url: shop.image_url,
       distance: (shop as any).distance || null
