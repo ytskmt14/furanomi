@@ -17,6 +17,7 @@ import { List, Map } from 'lucide-react';
 import { Toaster } from './components/ui/toaster';
 import { UserProfile } from './components/auth/UserProfile';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { ServiceWorkerDebug } from './components/ServiceWorkerDebug';
 
 // Code Splitting: 管理画面を遅延ロード
 const ShopManagerApp = lazy(() => import('./components/shopManager/ShopManagerApp'));
@@ -305,6 +306,13 @@ function App() {
                   </Layout>
                 </ProtectedRoute>
               </AuthProvider>
+            } />
+            
+            {/* Service Worker デバッグ画面（開発・デバッグ用） */}
+            <Route path="/user/debug/sw" element={
+              <Layout userLocation={null}>
+                <ServiceWorkerDebug />
+              </Layout>
             } />
             
             {/* 店舗管理者用アプリ（Code Splitting） */}
