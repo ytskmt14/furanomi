@@ -56,14 +56,24 @@ class ApiService {
       credentials: 'include', // HTTP-only cookies を送信
     };
 
-    const response = await fetch(url, { ...defaultOptions, ...options });
+    try {
+      const response = await fetch(url, { ...defaultOptions, ...options });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      return response.json();
+    } catch (error: any) {
+      // ネットワークエラーやタイムアウトの処理
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('ネットワークエラー: サーバーに接続できませんでした');
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   // 店舗管理者ログイン

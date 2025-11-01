@@ -24,7 +24,19 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // 詳細なエラー情報をログに記録（本番環境でも確認可能）
+    console.error('ErrorBoundary caught an error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    });
+    
+    // 本番環境でもエラーを外部サービスに送信する場合はここに追加
+    // 例: Sentry, LogRocket, など
   }
 
   resetError = () => {
@@ -58,11 +70,19 @@ const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> 
             申し訳ございません。予期しないエラーが発生しました。
           </p>
           
-          {import.meta.env.DEV && error && (
+          {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-800 font-mono">
-                {error.message}
+              <p className="text-sm text-red-800 font-mono break-words">
+                {error.message || '予期しないエラーが発生しました'}
               </p>
+              {import.meta.env.DEV && error.stack && (
+                <details className="mt-2">
+                  <summary className="text-xs text-red-600 cursor-pointer">詳細を表示</summary>
+                  <pre className="text-xs text-red-700 mt-2 overflow-auto max-h-40">
+                    {error.stack}
+                  </pre>
+                </details>
+              )}
             </div>
           )}
           

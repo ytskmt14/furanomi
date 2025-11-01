@@ -102,15 +102,20 @@ const UserApp: React.FC = () => {
         
         // 位置情報ベースで店舗を検索
         const response = await apiService.searchShopsByLocation(location.lat, location.lng);
-        setShops(response.shops);
-        setFilteredShops(response.shops);
+        setShops(response.shops || []);
+        setFilteredShops(response.shops || []);
       } catch (locationError) {
         console.warn('位置情報の取得に失敗、全店舗を表示:', locationError);
         
         // 位置情報が取得できない場合は全店舗を表示
-        const response = await apiService.getShops();
-        setShops(response.shops);
-        setFilteredShops(response.shops);
+        try {
+          const response = await apiService.getShops();
+          setShops(response.shops || []);
+          setFilteredShops(response.shops || []);
+        } catch (shopsError) {
+          console.error('店舗データの取得に失敗:', shopsError);
+          setError(shopsError instanceof Error ? shopsError.message : '店舗データの読み込みに失敗しました');
+        }
       }
     } catch (err) {
       console.error('店舗データの読み込みに失敗:', err);
@@ -118,7 +123,7 @@ const UserApp: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []); // 依存配列を空にして、初回のみ実行
+  }, [getUserLocation]); // getUserLocationを依存配列に追加
 
   // 初期データ読み込み（初回のみ実行）
   useEffect(() => {
