@@ -1,5 +1,5 @@
 // Service Worker Version
-const CACHE_VERSION = 'v1.0.2';
+const CACHE_VERSION = 'v1.0.3';
 const CACHE_NAME = `furanomi-cache-${CACHE_VERSION}`;
 
 // キャッシュ対象のリソース
@@ -76,7 +76,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 静的リソースは Cache First
+  // JavaScript/CSSファイルは Network First（最新版を優先）
+  if (request.url.match(/\.(js|css)$/)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // 正常レスポンスのみキャッシュ
+          if (response && response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // その他の静的リソースは Cache First
   event.respondWith(
     caches.match(request).then((cached) => cached || fetch(request))
   );
