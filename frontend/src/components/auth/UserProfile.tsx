@@ -13,11 +13,20 @@ export const UserProfile: React.FC = () => {
   const [name, setName] = useState(user?.name || '');
   const [saving, setSaving] = useState(false);
 
-  if (!user) {
-    return null;
-  }
+  // userの変更にnameを同期
+  useEffect(() => {
+    if (user?.name) {
+      setName(user.name);
+    }
+  }, [user?.name]);
 
   useEffect(() => {
+    // userがnullの場合は何もしない
+    if (!user?.id) {
+      setFavoriteShops([]);
+      return;
+    }
+    
     let mounted = true;
     const loadFavorites = async () => {
       try {
@@ -54,6 +63,11 @@ export const UserProfile: React.FC = () => {
       setFavLoadingId(null);
     }
   };
+
+  // userがnullの場合は何も表示しない（renderの部分で条件分岐）
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-6">

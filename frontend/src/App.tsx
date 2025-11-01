@@ -128,7 +128,7 @@ const UserApp: React.FC = () => {
   // 初期データ読み込み（初回のみ実行）
   useEffect(() => {
     loadShops();
-  }, []); // 依存配列を空にして、初回のみ実行
+  }, [loadShops]); // loadShopsを依存配列に追加
 
   // メモ化されたコンポーネント
   const shopListComponent = useMemo(() => (
