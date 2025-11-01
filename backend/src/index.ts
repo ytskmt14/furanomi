@@ -16,6 +16,7 @@ import { notificationRoutes } from './routes/notifications';
 import { shopFeatureRoutes } from './routes/shopFeatures';
 import { userNotificationRoutes } from './routes/userNotifications';
 import { userFavoritesRoutes } from './routes/userFavorites';
+import { userAuthRoutes } from './routes/userAuth';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { performanceMiddleware, getPerformanceStats } from './middleware/performance';
@@ -74,6 +75,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // API ルート
 app.use('/api/auth', authRoutes);
+app.use('/api/user-auth', userAuthRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/system', systemRoutes);
