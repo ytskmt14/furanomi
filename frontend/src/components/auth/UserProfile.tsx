@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { useToast } from '../../hooks/use-toast';
 import { apiService } from '../../services/api';
 import { User as UserIcon, Bookmark } from 'lucide-react';
+import { UserPushNotificationSettings } from '../user/UserPushNotificationSettings';
 
 export const UserProfile: React.FC = () => {
   const { user } = useAuth();
@@ -141,6 +142,11 @@ export const UserProfile: React.FC = () => {
             ))}
           </ul>
         )}
+      </div>
+
+      {/* プッシュ通知設定 */}
+      <div className="mt-6">
+        <UserPushNotificationSettings />
       </div>
     </div>
   );
