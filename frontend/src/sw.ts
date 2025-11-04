@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { clientsClaim } from 'workbox-core';
+import { clientsClaim, skipWaiting } from 'workbox-core';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
@@ -7,6 +7,8 @@ import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 
 declare const self: ServiceWorkerGlobalScope;
 
+// 即座に新しいService Workerをアクティブにする
+skipWaiting();
 // クライアントクレームを有効化（即座にService Workerをアクティブにする）
 clientsClaim();
 
@@ -15,16 +17,19 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 // キャッシュ戦略の設定
 // JS/CSSファイルはNetwork First（最新版を優先）
+// iOS Safariでのキャッシュ問題を回避するため、より積極的にネットワークから取得
 registerRoute(
   ({ url }) => url.pathname.match(/\.(js|css)$/) && url.origin === self.location.origin,
   new NetworkFirst({
     cacheName: 'js-css-cache',
     plugins: [
       new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 60 * 60 * 24 * 7, // 7日
+        maxEntries: 20, // エントリ数を減らしてキャッシュを小さく保つ
+        maxAgeSeconds: 60 * 60 * 24, // 1日に短縮（iOS Safari対策）
+        purgeOnQuotaError: true, // クォータエラー時にキャッシュをクリア
       }),
     ],
+    networkTimeoutSeconds: 3, // タイムアウトを短く設定（すぐにネットワークから取得）
   })
 );
 
