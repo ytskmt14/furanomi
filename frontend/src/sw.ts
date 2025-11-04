@@ -17,19 +17,21 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 // キャッシュ戦略の設定
 // JS/CSSファイルはNetwork First（最新版を優先）
-// iOS Safariでのキャッシュ問題を回避するため、より積極的にネットワークから取得
+// プリキャッシュから除外しているため、このルートが適用される
+// iOS Safariでのキャッシュ問題を回避するため、ネットワークを最優先
 registerRoute(
   ({ url }) => url.pathname.match(/\.(js|css)$/) && url.origin === self.location.origin,
   new NetworkFirst({
     cacheName: 'js-css-cache',
     plugins: [
       new ExpirationPlugin({
-        maxEntries: 20, // エントリ数を減らしてキャッシュを小さく保つ
-        maxAgeSeconds: 60 * 60 * 24, // 1日に短縮（iOS Safari対策）
+        maxEntries: 10, // エントリ数をさらに減らす
+        maxAgeSeconds: 60 * 5, // 5分に短縮（iOS Safari対策）
         purgeOnQuotaError: true, // クォータエラー時にキャッシュをクリア
       }),
     ],
-    networkTimeoutSeconds: 3, // タイムアウトを短く設定（すぐにネットワークから取得）
+    // タイムアウトを設定しない（デフォルト動作：ネットワークを優先）
+    // ネットワークが失敗した場合のみキャッシュを使用
   })
 );
 

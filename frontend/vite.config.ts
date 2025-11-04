@@ -65,7 +65,11 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff,woff2}'],
+        // JS/CSSファイルはプリキャッシュから除外（Network First戦略を使用）
+        // iOS Safariでのキャッシュ問題を回避するため
+        globPatterns: ['**/*.{html,ico,png,svg,jpg,jpeg,webp,woff,woff2}'],
+        // JS/CSSファイルは除外
+        globIgnores: ['**/*.{js,css}'],
       },
       // 開発環境でもService Workerを有効化
       devOptions: {
