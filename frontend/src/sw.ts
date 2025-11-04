@@ -4,36 +4,11 @@ import { ExpirationPlugin } from 'workbox-expiration';
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
-import type { WorkboxPlugin } from 'workbox-core';
 
 declare const self: ServiceWorkerGlobalScope;
 
-// デバッグ用プラグイン: どのファイルが読み込まれているかをログ出力
-class DebugLoggingPlugin implements WorkboxPlugin {
-  pluginName = 'DebugLoggingPlugin';
-  
-  fetchDidSucceed = async ({ request, response }: { request: Request; response: Response }) => {
-    const url = new URL(request.url);
-    console.log(`[Service Worker] Fetched from network: ${url.pathname} (${response.status})`);
-    return response;
-  };
-  
-  cacheDidUpdate = async ({ request }: { request: Request; oldResponse?: Response | null; newResponse: Response }) => {
-    const url = new URL(request.url);
-    console.log(`[Service Worker] Cache updated: ${url.pathname}`);
-  };
-  
-  cacheWillMatch = async ({ request, cachedResponse }: { request: Request; cachedResponse?: Response | null }) => {
-    if (cachedResponse) {
-      const url = new URL(request.url);
-      console.log(`[Service Worker] Using cached response: ${url.pathname}`);
-    }
-    return cachedResponse || undefined;
-  };
-}
-
 // Service Workerのバージョン（キャッシュ名に含める）
-const SW_VERSION = 'v1.0.5';
+const SW_VERSION = 'v1.0.6';
 
 // 古いキャッシュをクリーンアップ
 cleanupOutdatedCaches();
@@ -82,9 +57,9 @@ self.addEventListener('activate', (event) => {
       
       await Promise.all(deletePromises);
       
-      // iOS 18対策: HTMLとJS/CSSファイルのキャッシュも明示的にクリア
-      // すべてのキャッシュを開いて、index.htmlとJS/CSSファイルを削除
-      for (const cacheName of currentCacheNames) {
+      // Chrome/iOS 18対策: すべてのキャッシュからHTML/JS/CSSファイルを削除
+      // 異なるバージョンのファイルが混在することを防ぐ
+      for (const cacheName of cacheNames) {
         try {
           const cache = await caches.open(cacheName);
           const keys = await cache.keys();
@@ -106,7 +81,17 @@ self.addEventListener('activate', (event) => {
         }
       }
       
-      console.log(`[Service Worker] Old caches cleared. Current version: ${SW_VERSION}`);
+      // さらに、すべてのキャッシュを削除（Workboxのプリキャッシュを除く）
+      // より確実に古いファイルを削除
+      const allDeletePromises = cacheNames
+        .filter((cacheName) => !cacheName.startsWith('workbox-precache'))
+        .map((cacheName) => {
+          console.log(`[Service Worker] Deleting all files from cache: ${cacheName}`);
+          return caches.delete(cacheName);
+        });
+      
+      await Promise.all(allDeletePromises);
+      console.log(`[Service Worker] All caches cleared (except workbox-precache). Current version: ${SW_VERSION}`);
       
       // すべてのクライアントにService Workerがアクティブになったことを通知し、ページをリロード
       const clients = await self.clients.matchAll({ includeUncontrolled: true });
@@ -143,24 +128,23 @@ registerRoute(
   }
 );
 
-// JS/CSSファイルはNetwork First（最新版を優先）
-// プリキャッシュから除外しているため、このルートが適用される
-// iOS Safariでのキャッシュ問題を回避するため、ネットワークを最優先
+// JS/CSSファイルはNetwork Only（キャッシュを一切使わない）
+// ChromeでもReact error #300が発生するため、キャッシュを完全に無効化
+// 異なるバージョンのJSファイルが混在することを防ぐ
 registerRoute(
   ({ url }) => url.pathname.match(/\.(js|css)$/) && url.origin === self.location.origin,
-  new NetworkFirst({
-    cacheName: `js-css-cache-${SW_VERSION}`,
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 10, // エントリ数をさらに減らす
-        maxAgeSeconds: 60 * 5, // 5分に短縮（iOS Safari対策）
-        purgeOnQuotaError: true, // クォータエラー時にキャッシュをクリア
-      }),
-      new DebugLoggingPlugin(), // デバッグログ用プラグイン
-    ],
-    // タイムアウトを設定しない（デフォルト動作：ネットワークを優先）
-    // ネットワークが失敗した場合のみキャッシュを使用
-  })
+  async ({ request }) => {
+    // キャッシュを完全にバイパスしてネットワークから取得
+    // 古いJSファイルが読み込まれることを防ぐ
+    try {
+      const response = await fetch(request, { cache: 'no-store' });
+      console.log(`[Service Worker] JS/CSS fetched from network (no-cache): ${new URL(request.url).pathname}`);
+      return response;
+    } catch (error) {
+      console.error(`[Service Worker] Failed to fetch JS/CSS: ${new URL(request.url).pathname}`, error);
+      throw error;
+    }
+  }
 );
 
 // APIリクエストはNetwork First
