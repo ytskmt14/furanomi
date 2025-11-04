@@ -18,18 +18,17 @@ class DebugLoggingPlugin implements WorkboxPlugin {
     return response;
   };
   
-  cacheDidUpdate = async ({ request, oldResponse, newResponse }: { request: Request; oldResponse?: Response; newResponse: Response }) => {
+  cacheDidUpdate = async ({ request }: { request: Request; oldResponse?: Response | null; newResponse: Response }) => {
     const url = new URL(request.url);
     console.log(`[Service Worker] Cache updated: ${url.pathname}`);
-    return newResponse;
   };
   
-  cacheWillMatch = async ({ request, cachedResponse }: { request: Request; cachedResponse?: Response }) => {
+  cacheWillMatch = async ({ request, cachedResponse }: { request: Request; cachedResponse?: Response | null }) => {
     if (cachedResponse) {
       const url = new URL(request.url);
       console.log(`[Service Worker] Using cached response: ${url.pathname}`);
     }
-    return cachedResponse;
+    return cachedResponse || undefined;
   };
 }
 
