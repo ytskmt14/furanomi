@@ -6,7 +6,7 @@ import './index.css'
 import App from './App.tsx'
 
 // アプリのバージョン（sw.tsのSW_VERSIONと同期すること）
-const APP_VERSION = 'v1.0.8';
+const APP_VERSION = 'v1.0.9';
 
 // PWAモードかどうかを判定
 const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
@@ -108,8 +108,28 @@ async function clearAllCaches() {
   }
 })();
 
-// Service Worker登録（vite-plugin-pwaが自動的に処理）
-if ('serviceWorker' in navigator) {
+// iOS + PWA standaloneモードの検出
+// iOS 17/18のService Worker Cache APIバグ対策として、この組み合わせではSWを無効化
+const isIOSPWA = isPWA && /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+if (isIOSPWA) {
+  console.warn('[Service Worker] Disabled for iOS PWA standalone mode due to known iOS 17/18 bugs');
+  console.warn('[Service Worker] See: https://bugs.webkit.org/show_bug.cgi?id=261767');
+
+  // 既存のService Workerがあれば unregister
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(registration => {
+        console.log('[Service Worker] Unregistering existing SW for iOS PWA');
+        registration.unregister();
+      });
+    });
+  }
+}
+
+// Service Worker登録（iOS PWA以外）
+if ('serviceWorker' in navigator && !isIOSPWA) {
+  console.log('[Service Worker] Registering service worker...');
   registerSW({
     immediate: true, // 即座に新しいService Workerをアクティブにする
     onNeedRefresh() {

@@ -9,7 +9,7 @@ declare const self: ServiceWorkerGlobalScope;
 
 // Service Workerのバージョン（キャッシュ名に含める）
 // main.tsxのAPP_VERSIONと同期すること
-const SW_VERSION = 'v1.0.8';
+const SW_VERSION = 'v1.0.9';
 
 // 古いキャッシュをクリーンアップ
 cleanupOutdatedCaches();
@@ -161,32 +161,70 @@ registerRoute(
 );
 
 // APIリクエストはNetwork First
+// iOS 17/18 Cache API バグ対策: try-catch でラップしてエラーを処理
 registerRoute(
   ({ url }) => url.pathname.startsWith('/api/'),
-  new NetworkFirst({
-    cacheName: `api-cache-${SW_VERSION}`,
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 60 * 5, // 5分
-      }),
-    ],
-    networkTimeoutSeconds: 10,
-  })
+  async ({ request, event }) => {
+    const strategy = new NetworkFirst({
+      cacheName: `api-cache-${SW_VERSION}`,
+      plugins: [
+        new ExpirationPlugin({
+          maxEntries: 100,
+          maxAgeSeconds: 60 * 5, // 5分
+        }),
+      ],
+      networkTimeoutSeconds: 10,
+    });
+
+    try {
+      // iOS Cache API バグ対策: caches.open() を先に呼び出す
+      await self.caches.open(`api-cache-${SW_VERSION}`);
+      const response = await strategy.handle({ request, event });
+      return response;
+    } catch (error) {
+      console.error('[Service Worker] API cache error, falling back to network:', error);
+      // Cache APIエラー時はネットワークから直接取得
+      try {
+        return await fetch(request);
+      } catch (fetchError) {
+        console.error('[Service Worker] Network fallback also failed:', fetchError);
+        throw fetchError;
+      }
+    }
+  }
 );
 
 // 画像ファイルはCache First
+// iOS 17/18 Cache API バグ対策: try-catch でラップしてエラーを処理
 registerRoute(
   ({ url }) => url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp)$/),
-  new CacheFirst({
-    cacheName: `image-cache-${SW_VERSION}`,
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 60 * 60 * 24 * 30, // 30日
-      }),
-    ],
-  })
+  async ({ request, event }) => {
+    const strategy = new CacheFirst({
+      cacheName: `image-cache-${SW_VERSION}`,
+      plugins: [
+        new ExpirationPlugin({
+          maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 * 30, // 30日
+        }),
+      ],
+    });
+
+    try {
+      // iOS Cache API バグ対策: caches.open() を先に呼び出す
+      await self.caches.open(`image-cache-${SW_VERSION}`);
+      const response = await strategy.handle({ request, event });
+      return response;
+    } catch (error) {
+      console.error('[Service Worker] Image cache error, falling back to network:', error);
+      // Cache APIエラー時はネットワークから直接取得
+      try {
+        return await fetch(request);
+      } catch (fetchError) {
+        console.error('[Service Worker] Network fallback also failed:', fetchError);
+        throw fetchError;
+      }
+    }
+  }
 );
 
 // プッシュ通知受信
