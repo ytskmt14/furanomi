@@ -85,38 +85,22 @@ async function clearAllCaches() {
   }
 }
 
-// ローカルストレージからアプリバージョンをチェック
-function checkAppVersion() {
-  try {
-    const storedVersion = localStorage.getItem('app_version');
-    if (storedVersion && storedVersion !== APP_VERSION) {
-      console.log(`[Version] Version mismatch detected: ${storedVersion} -> ${APP_VERSION}`);
-      // バージョンが変わった場合、キャッシュをクリアしてリロード
-      return true;
-    }
-    localStorage.setItem('app_version', APP_VERSION);
-    return false;
-  } catch (error) {
-    console.error('[Version] Failed to check version:', error);
-    return false;
-  }
-}
-
 // 初期化処理（エラーハンドリング付き）
 (async () => {
   try {
-    // バージョンチェック
-    const versionChanged = checkAppVersion();
-
-    if (versionChanged) {
-      // バージョンが変わった場合、キャッシュをクリアしてリロード
-      await clearAllCaches();
-      console.log('[Version] Version changed, reloading...');
-      window.location.reload();
-      return; // リロードするのでここで終了
+    // バージョン情報をログに出力（チェックのみ、リロードはしない）
+    const storedVersion = localStorage.getItem('app_version');
+    if (storedVersion && storedVersion !== APP_VERSION) {
+      console.log(`[Version] Version updated: ${storedVersion} -> ${APP_VERSION}`);
+      localStorage.setItem('app_version', APP_VERSION);
+    } else if (!storedVersion) {
+      console.log(`[Version] First time initialization: ${APP_VERSION}`);
+      localStorage.setItem('app_version', APP_VERSION);
+    } else {
+      console.log(`[Version] Current version: ${APP_VERSION}`);
     }
 
-    // 定期的なキャッシュクリア（起動時に毎回実行）
+    // キャッシュクリア（起動時に毎回実行、リロードはしない）
     await clearAllCaches();
   } catch (error) {
     // 初期化エラーが発生してもアプリは起動を続ける
