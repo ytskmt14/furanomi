@@ -9,7 +9,7 @@ declare const self: ServiceWorkerGlobalScope;
 
 // Service Workerのバージョン（キャッシュ名に含める）
 // main.tsxのAPP_VERSIONと同期すること
-const SW_VERSION = 'v1.0.7';
+const SW_VERSION = 'v1.0.8';
 
 // 古いキャッシュをクリーンアップ
 cleanupOutdatedCaches();

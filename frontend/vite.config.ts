@@ -18,7 +18,8 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'any',
-        start_url: '/',
+        start_url: '/user',
+        scope: '/',
         icons: [
           {
             src: '/icon-128x128.svg',
@@ -112,7 +113,8 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
+        // React error #300デバッグのため、一時的にconsole.logを残す
+        drop_console: false,
         drop_debugger: true,
       },
     },

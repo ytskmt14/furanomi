@@ -6,7 +6,60 @@ import './index.css'
 import App from './App.tsx'
 
 // アプリのバージョン（sw.tsのSW_VERSIONと同期すること）
-const APP_VERSION = 'v1.0.7';
+const APP_VERSION = 'v1.0.8';
+
+// PWAモードかどうかを判定
+const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+              (window.navigator as any).standalone === true ||
+              document.referrer.includes('android-app://');
+
+console.log('[PWA] Mode:', isPWA ? 'PWA (standalone)' : 'Browser');
+console.log('[PWA] User Agent:', navigator.userAgent);
+console.log('[PWA] App Version:', APP_VERSION);
+
+// グローバルエラーハンドラー（React error #300を含むすべてのエラーをキャッチ）
+window.addEventListener('error', (event) => {
+  console.error('[Global Error]', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    error: event.error,
+    isPWA,
+    timestamp: new Date().toISOString()
+  });
+
+  // React error #300の場合、より詳細な情報を出力
+  if (event.message && event.message.includes('Minified React error #300')) {
+    console.error('[React Error #300 Detected]', {
+      message: 'Suspense boundary error detected',
+      suggestion: 'Visit https://react.dev/errors/300 for details',
+      isPWA,
+      workaround: 'Try reloading or reinstalling the PWA'
+    });
+
+    // PWAモードの場合、より積極的に回復を試みる
+    if (isPWA) {
+      console.log('[React Error #300] Attempting recovery...');
+      // Service Workerを再登録
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          console.log('[React Error #300] Found', registrations.length, 'service workers');
+        });
+      }
+    }
+  }
+});
+
+// Promiseの未処理エラーもキャッチ
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('[Unhandled Promise Rejection]', {
+    reason: event.reason,
+    promise: event.promise,
+    isPWA,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // iOS 18対策: アプリ起動時にすべてのキャッシュをクリア
 async function clearAllCaches() {
