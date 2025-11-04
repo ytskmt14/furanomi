@@ -65,11 +65,12 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       injectManifest: {
-        // JS/CSSファイルはプリキャッシュから除外（Network First戦略を使用）
+        // JS/CSS/HTMLファイルはプリキャッシュから除外（Network First戦略を使用）
         // iOS Safariでのキャッシュ問題を回避するため
-        globPatterns: ['**/*.{html,ico,png,svg,jpg,jpeg,webp,woff,woff2}'],
-        // JS/CSSファイルは除外
-        globIgnores: ['**/*.{js,css}'],
+        // index.htmlを除外することで、常に最新のindex.htmlをネットワークから取得
+        globPatterns: ['**/*.{ico,png,svg,jpg,jpeg,webp,woff,woff2}'],
+        // JS/CSS/HTMLファイルは除外
+        globIgnores: ['**/*.{js,css,html}'],
       },
       // 開発環境でもService Workerを有効化
       devOptions: {
