@@ -66,12 +66,11 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       injectManifest: {
-        // JS/CSS/HTMLファイルはプリキャッシュから除外（Network First戦略を使用）
-        // iOS Safariでのキャッシュ問題を回避するため
-        // index.htmlを除外することで、常に最新のindex.htmlをネットワークから取得
-        globPatterns: ['**/*.{ico,png,svg,jpg,jpeg,webp,woff,woff2}'],
-        // JS/CSS/HTMLファイルは除外
-        globIgnores: ['**/*.{js,css,html}'],
+        // プッシュ通知機能に焦点を当てるため、プリキャッシュは最小限に
+        // アイコンなどの静的アセットのみプリキャッシュ
+        globPatterns: ['**/*.{ico,png,svg,jpg,jpeg,webp}'],
+        // JS/CSS/HTMLファイルはプリキャッシュから除外（常にネットワークから取得）
+        globIgnores: ['**/*.{js,css,html,woff,woff2}'],
       },
       // 開発環境でもService Workerを有効化
       devOptions: {

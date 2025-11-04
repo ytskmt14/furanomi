@@ -57,19 +57,37 @@ export const PushNotificationSettings: React.FC = () => {
     try {
       setIsLoading(true);
 
+      // Service Workerが登録されているか確認
+      if (!('serviceWorker' in navigator)) {
+        throw new Error('Service Workerがサポートされていません');
+      }
+
       // VAPID公開鍵を取得
       const publicKeyResponse = await fetch(`${API_BASE_URL}/notifications/vapid-public-key`);
       if (!publicKeyResponse.ok) {
-        throw new Error('Failed to get VAPID public key');
+        throw new Error('VAPID公開鍵の取得に失敗しました');
       }
       const { publicKey } = await publicKeyResponse.json();
 
+      if (!publicKey) {
+        throw new Error('VAPID公開鍵が設定されていません');
+      }
+
       // プッシュ通知の購読
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: publicKey
-      });
+      if (!registration) {
+        throw new Error('Service Workerが登録されていません。ページをリロードしてください。');
+      }
+
+      // 既存の購読を確認
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        // 新しい購読を作成
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: publicKey
+        });
+      }
 
       // バックエンドに購読情報を送信
       const subscriptionData: SubscriptionData = {
@@ -89,7 +107,8 @@ export const PushNotificationSettings: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to subscribe');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || '購読情報の保存に失敗しました');
       }
 
       setIsSubscribed(true);
@@ -99,9 +118,19 @@ export const PushNotificationSettings: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Failed to subscribe:', error);
+      let errorMessage = 'プッシュ通知の設定に失敗しました';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.name === 'NotAllowedError') {
+        errorMessage = '通知の許可が必要です。ブラウザの設定を確認してください。';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = 'プッシュ通知がサポートされていません。';
+      }
+      
       toast({
         title: '購読失敗',
-        description: error.message || 'プッシュ通知の設定に失敗しました',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

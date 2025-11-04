@@ -6,7 +6,7 @@ import './index.css'
 import App from './App.tsx'
 
 // アプリのバージョン（sw.tsのSW_VERSIONと同期すること）
-const APP_VERSION = 'v1.0.9';
+const APP_VERSION = 'v1.0.10';
 
 // PWAモードかどうかを判定
 const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
@@ -61,34 +61,9 @@ window.addEventListener('unhandledrejection', (event) => {
   });
 });
 
-// iOS 18対策: アプリ起動時にすべてのキャッシュをクリア
-async function clearAllCaches() {
-  console.log('[Cache] Clearing all caches to prevent version mismatch...');
-  try {
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      console.log(`[Cache] Found ${cacheNames.length} caches:`, cacheNames);
-
-      // Workboxのプリキャッシュ以外をすべて削除
-      const deletePromises = cacheNames
-        .filter((cacheName) => !cacheName.startsWith('workbox-precache'))
-        .map((cacheName) => {
-          console.log(`[Cache] Deleting cache: ${cacheName}`);
-          return caches.delete(cacheName);
-        });
-
-      await Promise.all(deletePromises);
-      console.log('[Cache] All caches cleared successfully');
-    }
-  } catch (error) {
-    console.error('[Cache] Failed to clear caches:', error);
-  }
-}
-
-// 初期化処理（エラーハンドリング付き）
+// 初期化処理（バージョン情報のみ記録）
 (async () => {
   try {
-    // バージョン情報をログに出力（チェックのみ、リロードはしない）
     const storedVersion = localStorage.getItem('app_version');
     if (storedVersion && storedVersion !== APP_VERSION) {
       console.log(`[Version] Version updated: ${storedVersion} -> ${APP_VERSION}`);
@@ -96,48 +71,22 @@ async function clearAllCaches() {
     } else if (!storedVersion) {
       console.log(`[Version] First time initialization: ${APP_VERSION}`);
       localStorage.setItem('app_version', APP_VERSION);
-    } else {
-      console.log(`[Version] Current version: ${APP_VERSION}`);
     }
-
-    // キャッシュクリア（起動時に毎回実行、リロードはしない）
-    await clearAllCaches();
   } catch (error) {
-    // 初期化エラーが発生してもアプリは起動を続ける
-    console.error('[Init] Initialization error (continuing anyway):', error);
+    console.error('[Init] Initialization error:', error);
   }
 })();
 
-// iOS + PWA standaloneモードの検出
-// iOS 17/18のService Worker Cache APIバグ対策として、この組み合わせではSWを無効化
-const isIOSPWA = isPWA && /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-if (isIOSPWA) {
-  console.warn('[Service Worker] Disabled for iOS PWA standalone mode due to known iOS 17/18 bugs');
-  console.warn('[Service Worker] See: https://bugs.webkit.org/show_bug.cgi?id=261767');
-
-  // 既存のService Workerがあれば unregister
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-      registrations.forEach(registration => {
-        console.log('[Service Worker] Unregistering existing SW for iOS PWA');
-        registration.unregister();
-      });
-    });
-  }
-}
-
-// Service Worker登録（iOS PWA以外）
-if ('serviceWorker' in navigator && !isIOSPWA) {
+// Service Worker登録（プッシュ通知のために必要）
+// 注意: iOSでもService Workerは有効化（プッシュ通知に必要）
+if ('serviceWorker' in navigator) {
   console.log('[Service Worker] Registering service worker...');
   registerSW({
     immediate: true, // 即座に新しいService Workerをアクティブにする
     onNeedRefresh() {
-      // 新しいバージョンが利用可能になったら、キャッシュをクリアしてリロード
-      console.log('[Service Worker] New version available, clearing caches and reloading...');
-      clearAllCaches().then(() => {
-        window.location.reload();
-      });
+      // 新しいバージョンが利用可能になったらリロード
+      console.log('[Service Worker] New version available, reloading...');
+      window.location.reload();
     },
     onOfflineReady() {
       console.log('[Service Worker] App ready to work offline');
@@ -149,12 +98,8 @@ if ('serviceWorker' in navigator && !isIOSPWA) {
         navigator.serviceWorker.addEventListener('message', async (event) => {
           if (event.data && event.data.type === 'SW_ACTIVATED') {
             console.log(`[Service Worker] New version activated (${event.data.version})`);
-
+            // 新しいバージョンがアクティブになったらリロード
             if (event.data.reload) {
-              // キャッシュをクリアしてからリロード
-              await clearAllCaches();
-              console.log('[Service Worker] Caches cleared, reloading...');
-              // 少し待ってからリロード（確実にキャッシュクリアが完了するまで）
               setTimeout(() => {
                 window.location.reload();
               }, 200);
@@ -180,9 +125,8 @@ if ('serviceWorker' in navigator && !isIOSPWA) {
               if (newWorker.state === 'installed') {
                 if (navigator.serviceWorker.controller) {
                   // 既存のService Workerがある場合は、新しいバージョンに更新
-                  console.log('[Service Worker] New version installed, clearing caches...');
-                  await clearAllCaches();
-
+                  console.log('[Service Worker] New version installed');
+                  
                   // skipWaitingを促す（sw.tsで自動的に実行されるが念のため）
                   newWorker.postMessage({ type: 'SKIP_WAITING' });
 
