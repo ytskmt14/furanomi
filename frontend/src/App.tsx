@@ -57,6 +57,20 @@ const StaffAvailabilityUpdate = lazyWithRetry(() => import('./components/staff/S
 const UserLanding = lazyWithRetry(() => import('./components/landing/UserLanding'));
 const MyReservations = lazyWithRetry(() => import('./components/reservation/MyReservations'));
 
+// アプリ起動時にバッジをクリア
+const AppBadgeManager: React.FC = () => {
+  useEffect(() => {
+    // アプリ起動時にアプリアイコンのバッジをクリア
+    if ('clearAppBadge' in navigator) {
+      (navigator as any).clearAppBadge().catch((error: Error) => {
+        console.warn('[App] Failed to clear badge on app start:', error);
+      });
+    }
+  }, []);
+  
+  return null;
+};
+
 // 利用者用アプリ
 const UserApp: React.FC = () => {
   // 店舗詳細モーダルは廃止
@@ -374,6 +388,7 @@ function App() {
           </Routes>
           <Toaster />
           <OfflineIndicator />
+          <AppBadgeManager />
         </Router>
     </ErrorBoundary>
   );

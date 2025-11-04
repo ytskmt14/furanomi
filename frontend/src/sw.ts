@@ -110,7 +110,20 @@ self.addEventListener('push', (event) => {
   }
   
   event.waitUntil(
-    self.registration.showNotification(notification.title, notification)
+    (async () => {
+      // 通知を表示
+      await self.registration.showNotification(notification.title, notification);
+      
+      // アプリアイコンにバッジを設定（ドット表示）
+      if ('setAppBadge' in navigator) {
+        try {
+          await (navigator as any).setAppBadge();
+          console.log('[Service Worker] Badge set on push notification');
+        } catch (error) {
+          console.warn('[Service Worker] Failed to set badge:', error);
+        }
+      }
+    })()
   );
 });
 
@@ -122,6 +135,16 @@ self.addEventListener('notificationclick', (event) => {
   
   event.waitUntil(
     (async () => {
+      // アプリアイコンのバッジをクリア
+      if ('clearAppBadge' in navigator) {
+        try {
+          await (navigator as any).clearAppBadge();
+          console.log('[Service Worker] Badge cleared on notification click');
+        } catch (error) {
+          console.warn('[Service Worker] Failed to clear badge:', error);
+        }
+      }
+      
       const targetUrl = (event.notification && event.notification.data && event.notification.data.url) || '/';
       const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       for (const client of allClients) {
