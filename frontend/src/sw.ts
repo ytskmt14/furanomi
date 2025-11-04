@@ -8,22 +8,35 @@ import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 declare const self: ServiceWorkerGlobalScope;
 
 // Service Workerのバージョン（キャッシュ名に含める）
-const SW_VERSION = 'v1.0.6';
+// main.tsxのAPP_VERSIONと同期すること
+const SW_VERSION = 'v1.0.7';
 
 // 古いキャッシュをクリーンアップ
 cleanupOutdatedCaches();
 
 // 即座に新しいService Workerをアクティブにする
-skipWaiting();
+self.skipWaiting();
+
+// クライアントからのメッセージを受信（skipWaitingリクエスト）
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[Service Worker] Received SKIP_WAITING message');
+    self.skipWaiting();
+  }
+});
+
 // クライアントクレームを有効化（即座にService Workerをアクティブにする）
 clientsClaim();
 
 // Service Workerアクティベート時に古いキャッシュをすべてクリア
 self.addEventListener('activate', (event) => {
   console.log(`[Service Worker] Activating version ${SW_VERSION}...`);
-  
+
   event.waitUntil(
     (async () => {
+      // 即座にすべてのクライアントをクレーム
+      await self.clients.claim();
+      console.log('[Service Worker] Claimed all clients');
       // 現在のキャッシュ名のリストを取得
       const currentCacheNames = [
         `html-cache-${SW_VERSION}`,

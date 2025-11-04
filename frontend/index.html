@@ -31,6 +31,11 @@
     <!-- その他のメタタグ -->
     <meta name="author" content="ふらのみ" />
     <meta name="theme-color" content="#3B82F6" />
+
+    <!-- iOS 18 BFCache対策: キャッシュを完全に無効化 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     
     <!-- PWA Manifest - vite-plugin-pwa will inject this automatically -->
     
@@ -55,6 +60,29 @@
     </script>
   </head>
   <body>
+    <!-- iOS 18 BFCache対策: ページがBFCacheから復元された場合は強制リロード -->
+    <script>
+      (function() {
+        // pageshow イベントでBFCache復元を検出
+        window.addEventListener('pageshow', function(event) {
+          if (event.persisted) {
+            console.log('[BFCache] Page restored from BFCache, forcing reload...');
+            window.location.reload();
+          }
+        });
+
+        // pagehide イベントでBFCacheを無効化
+        window.addEventListener('pagehide', function(event) {
+          // BFCacheを無効化するため、unloadイベントリスナーを追加
+          // （何もしないが、存在するだけでBFCacheが無効化される）
+        });
+
+        // unload イベントリスナーを追加してBFCacheを無効化
+        window.addEventListener('unload', function() {
+          // 何もしない（存在するだけでBFCacheが無効化される）
+        });
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
