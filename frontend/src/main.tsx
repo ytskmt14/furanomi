@@ -20,6 +20,17 @@ if ('serviceWorker' in navigator) {
     onRegistered(registration: ServiceWorkerRegistration | undefined) {
       // Service Worker登録後に更新をチェック
       if (registration) {
+        // iOS 18対策: Service Workerからのメッセージを受信
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SW_ACTIVATED' && event.data.reload) {
+            console.log(`[Service Worker] New version activated (${event.data.version}), reloading...`);
+            // 少し待ってからリロード（キャッシュクリアが完了するまで）
+            setTimeout(() => {
+              window.location.reload();
+            }, 100);
+          }
+        });
+        
         // 定期的に更新をチェック（1時間ごと）
         setInterval(() => {
           registration.update();

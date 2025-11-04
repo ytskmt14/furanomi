@@ -33,7 +33,7 @@ class DebugLoggingPlugin implements WorkboxPlugin {
 }
 
 // Service Workerのバージョン（キャッシュ名に含める）
-const SW_VERSION = 'v1.0.4';
+const SW_VERSION = 'v1.0.5';
 
 // 古いキャッシュをクリーンアップ
 cleanupOutdatedCaches();
@@ -81,14 +81,40 @@ self.addEventListener('activate', (event) => {
         });
       
       await Promise.all(deletePromises);
+      
+      // iOS 18対策: HTMLとJS/CSSファイルのキャッシュも明示的にクリア
+      // すべてのキャッシュを開いて、index.htmlとJS/CSSファイルを削除
+      for (const cacheName of currentCacheNames) {
+        try {
+          const cache = await caches.open(cacheName);
+          const keys = await cache.keys();
+          const htmlJsCssKeys = keys.filter((request) => {
+            const url = new URL(request.url);
+            return (
+              url.pathname === '/' ||
+              url.pathname.endsWith('.html') ||
+              url.pathname.endsWith('.js') ||
+              url.pathname.endsWith('.css')
+            );
+          });
+          await Promise.all(htmlJsCssKeys.map((key) => cache.delete(key)));
+          if (htmlJsCssKeys.length > 0) {
+            console.log(`[Service Worker] Cleared ${htmlJsCssKeys.length} HTML/JS/CSS files from ${cacheName}`);
+          }
+        } catch (error) {
+          console.warn(`[Service Worker] Failed to clear cache ${cacheName}:`, error);
+        }
+      }
+      
       console.log(`[Service Worker] Old caches cleared. Current version: ${SW_VERSION}`);
       
-      // すべてのクライアントにService Workerがアクティブになったことを通知
-      const clients = await self.clients.matchAll();
+      // すべてのクライアントにService Workerがアクティブになったことを通知し、ページをリロード
+      const clients = await self.clients.matchAll({ includeUncontrolled: true });
       clients.forEach((client) => {
         client.postMessage({
           type: 'SW_ACTIVATED',
           version: SW_VERSION,
+          reload: true, // iOS 18対策: 強制的にリロード
         });
       });
     })()
@@ -99,24 +125,22 @@ self.addEventListener('activate', (event) => {
 precacheAndRoute(self.__WB_MANIFEST);
 
 // キャッシュ戦略の設定
-// HTMLファイル（特にindex.html）はNetwork First（最新版を優先）
-// プリキャッシュから除外しているため、このルートが適用される
-// iOS Safariでのキャッシュ問題を回避するため、ネットワークを最優先
+// HTMLファイル（特にindex.html）はNetwork Only（キャッシュを一切使わない）
+// iOS 18対策: 常に最新のindex.htmlを取得して、古いJSファイルへの参照を防ぐ
 registerRoute(
   ({ url }) => (url.pathname === '/' || url.pathname.endsWith('.html')) && url.origin === self.location.origin,
-  new NetworkFirst({
-    cacheName: `html-cache-${SW_VERSION}`,
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 5, // エントリ数を少なく設定
-        maxAgeSeconds: 60 * 5, // 5分に短縮（iOS Safari対策）
-        purgeOnQuotaError: true, // クォータエラー時にキャッシュをクリア
-      }),
-      new DebugLoggingPlugin(), // デバッグログ用プラグイン
-    ],
-    // タイムアウトを設定しない（デフォルト動作：ネットワークを優先）
-    // ネットワークが失敗した場合のみキャッシュを使用
-  })
+  async ({ request }) => {
+    // キャッシュを完全にバイパスしてネットワークから取得
+    // iOS 18では、キャッシュされたindex.htmlが古いJSファイルを参照する可能性がある
+    try {
+      const response = await fetch(request, { cache: 'no-store' });
+      console.log(`[Service Worker] HTML fetched from network (no-cache): ${new URL(request.url).pathname}`);
+      return response;
+    } catch (error) {
+      console.error(`[Service Worker] Failed to fetch HTML: ${new URL(request.url).pathname}`, error);
+      throw error;
+    }
+  }
 );
 
 // JS/CSSファイルはNetwork First（最新版を優先）
