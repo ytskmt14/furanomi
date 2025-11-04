@@ -49,21 +49,26 @@ function checkAppVersion() {
   }
 }
 
-// 初期化処理
+// 初期化処理（エラーハンドリング付き）
 (async () => {
-  // バージョンチェック
-  const versionChanged = checkAppVersion();
+  try {
+    // バージョンチェック
+    const versionChanged = checkAppVersion();
 
-  if (versionChanged) {
-    // バージョンが変わった場合、キャッシュをクリアしてリロード
+    if (versionChanged) {
+      // バージョンが変わった場合、キャッシュをクリアしてリロード
+      await clearAllCaches();
+      console.log('[Version] Version changed, reloading...');
+      window.location.reload();
+      return; // リロードするのでここで終了
+    }
+
+    // 定期的なキャッシュクリア（起動時に毎回実行）
     await clearAllCaches();
-    console.log('[Version] Version changed, reloading...');
-    window.location.reload();
-    return; // リロードするのでここで終了
+  } catch (error) {
+    // 初期化エラーが発生してもアプリは起動を続ける
+    console.error('[Init] Initialization error (continuing anyway):', error);
   }
-
-  // 定期的なキャッシュクリア（起動時に毎回実行）
-  await clearAllCaches();
 })();
 
 // Service Worker登録（vite-plugin-pwaが自動的に処理）

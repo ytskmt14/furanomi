@@ -47,18 +47,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await apiService.getCurrentUserAuth();
       setUser(response.user);
-    } catch (error) {
-      // 未ログイン（401）は正常系として扱う：エラーを出さずに匿名として続行
-      const message = (error as any)?.message || '';
-      const isUnauthenticated = message.includes('Authentication required') || 
-                                message.includes('401') || 
-                                message.includes('Invalid token') ||
-                                message.includes('404');
+    } catch (error: any) {
+      // 未ログイン（401, 404）は正常系として扱う：エラーを出さずに匿名として続行
+      // status codeで直接判定（文字列マッチングより堅牢）
+      const status = error?.status;
+      const isUnauthenticated = status === 401 || status === 404;
+
       if (!isUnauthenticated) {
-        console.warn('Failed to load user:', error);
+        // 401/404以外のエラー（ネットワークエラーなど）はログに出すが、アプリは継続
+        console.warn('Failed to load user (non-auth error):', {
+          error,
+          status,
+          message: error?.message
+        });
       }
+
+      // いずれの場合もユーザーをnullに設定（未認証として扱う）
       setUser(null);
     } finally {
+      // 必ずloadingを解除（これがないとアプリが起動しない）
       setIsLoading(false);
     }
   };
