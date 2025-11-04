@@ -1,11 +1,14 @@
 /// <reference lib="webworker" />
 import { clientsClaim, skipWaiting } from 'workbox-core';
 import { ExpirationPlugin } from 'workbox-expiration';
-import { precacheAndRoute } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 
 declare const self: ServiceWorkerGlobalScope;
+
+// 古いキャッシュをクリーンアップ
+cleanupOutdatedCaches();
 
 // 即座に新しいService Workerをアクティブにする
 skipWaiting();
