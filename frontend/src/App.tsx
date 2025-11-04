@@ -310,9 +310,11 @@ function App() {
             
             {/* Service Worker デバッグ画面（開発・デバッグ用） */}
             <Route path="/user/debug/sw" element={
-              <Layout userLocation={null}>
-                <ServiceWorkerDebug />
-              </Layout>
+              <AuthProvider>
+                <Layout userLocation={null}>
+                  <ServiceWorkerDebug />
+                </Layout>
+              </AuthProvider>
             } />
             
             {/* 店舗管理者用アプリ（Code Splitting） */}
