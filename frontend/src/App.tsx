@@ -20,11 +20,42 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ServiceWorkerDebug } from './components/ServiceWorkerDebug';
 
 // Code Splitting: 管理画面を遅延ロード
-const ShopManagerApp = lazy(() => import('./components/shopManager/ShopManagerApp'));
-const SystemAdminApp = lazy(() => import('./components/systemAdmin/SystemAdminApp'));
-const StaffAvailabilityUpdate = lazy(() => import('./components/staff/StaffAvailabilityUpdate'));
-const UserLanding = lazy(() => import('./components/landing/UserLanding'));
-const MyReservations = lazy(() => import('./components/reservation/MyReservations'));
+// chunk読み込みエラー時にリトライする仕組みを追加
+const lazyWithRetry = (componentImport: () => Promise<any>) =>
+  lazy(async () => {
+    const maxRetries = 3;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await componentImport();
+      } catch (error) {
+        console.warn(`[Lazy Load] Attempt ${i + 1}/${maxRetries} failed:`, error);
+
+        // 最後の試行でエラーになった場合
+        if (i === maxRetries - 1) {
+          console.error('[Lazy Load] All retry attempts failed, reloading page...');
+          // chunkの読み込みエラーの場合、ページをリロードして新しいchunkを取得
+          if (error instanceof Error && (
+            error.message.includes('Failed to fetch') ||
+            error.message.includes('Importing a module') ||
+            error.name === 'ChunkLoadError'
+          )) {
+            window.location.reload();
+          }
+          throw error;
+        }
+
+        // 次の試行前に少し待つ
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    }
+    throw new Error('Failed to load component after retries');
+  });
+
+const ShopManagerApp = lazyWithRetry(() => import('./components/shopManager/ShopManagerApp'));
+const SystemAdminApp = lazyWithRetry(() => import('./components/systemAdmin/SystemAdminApp'));
+const StaffAvailabilityUpdate = lazyWithRetry(() => import('./components/staff/StaffAvailabilityUpdate'));
+const UserLanding = lazyWithRetry(() => import('./components/landing/UserLanding'));
+const MyReservations = lazyWithRetry(() => import('./components/reservation/MyReservations'));
 
 // 利用者用アプリ
 const UserApp: React.FC = () => {

@@ -151,8 +151,19 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById('root')!).render(
+// React 19のStrictModeはiOS 18 PWAでReact error #300を引き起こす可能性があるため、
+// 本番環境では無効化（開発環境では有効のまま）
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Root element not found');
+}
+
+const app = import.meta.env.DEV ? (
   <StrictMode>
     <App />
-  </StrictMode>,
-)
+  </StrictMode>
+) : (
+  <App />
+);
+
+createRoot(rootElement).render(app);
