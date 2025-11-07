@@ -1,9 +1,12 @@
 /**
  * お気に入り管理のカスタムフック
+ * React Queryを使用した実装
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../services/api';
+import { queryKeys } from '../lib/queryKeys';
 
 /**
  * useFavorites の戻り値
@@ -12,14 +15,14 @@ export interface UseFavoritesReturn {
   favorites: Set<string>;
   isFavorite: (shopId: string) => boolean;
   toggleFavorite: (shopId: string) => Promise<void>;
-  loading: boolean;
+  isLoading: boolean;
   isToggling: (shopId: string) => boolean;
   error: Error | null;
   refetch: () => Promise<void>;
 }
 
 /**
- * お気に入り管理フック
+ * お気に入り管理フック（React Query版）
  *
  * @param isAuthenticated ユーザーが認証済みかどうか
  * @returns お気に入り管理機能
@@ -39,57 +42,89 @@ export interface UseFavoritesReturn {
  * ```
  */
 export function useFavorites(isAuthenticated: boolean): UseFavoritesReturn {
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [togglegingIds, setTogglingIds] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
-  /**
-   * お気に入り一覧を取得
-   */
-  const fetchFavorites = useCallback(async (): Promise<void> => {
-    if (!isAuthenticated) {
-      setFavorites(new Set());
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
+  // お気に入り一覧を取得
+  const { data = [], isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.favorites.lists(),
+    queryFn: async () => {
+      if (!isAuthenticated) return [];
       const response = await apiService.getFavorites();
-      const favIds = response.favorites || [];
-      setFavorites(new Set(favIds));
-      setError(null);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('お気に入りの取得に失敗しました');
-      setError(error);
-      setFavorites(new Set());
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated]);
+      return response.favorites || [];
+    },
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // 5分
+  });
 
-  /**
-   * 認証状態が変わったときにお気に入りを再取得
-   */
-  useEffect(() => {
-    fetchFavorites();
-  }, [isAuthenticated, fetchFavorites]);
+  // お気に入り追加・削除ミューテーション
+  const { mutate: mutateFavorite, isPending } = useMutation({
+    mutationFn: async ({
+      shopId,
+      isCurrentlyFavorite,
+    }: {
+      shopId: string;
+      isCurrentlyFavorite: boolean;
+    }) => {
+      if (isCurrentlyFavorite) {
+        await apiService.removeFavorite(shopId);
+      } else {
+        await apiService.addFavorite(shopId);
+      }
+    },
+    onMutate: async ({ shopId, isCurrentlyFavorite }) => {
+      // ミューテーション開始前にキャッシュをキャンセル
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.favorites.lists(),
+      });
+
+      // 前のデータを保存
+      const previousFavorites = queryClient.getQueryData<string[]>(
+        queryKeys.favorites.lists()
+      ) || [];
+
+      // 楽観的更新
+      queryClient.setQueryData(
+        queryKeys.favorites.lists(),
+        (old: string[] = []) => {
+          if (isCurrentlyFavorite) {
+            return old.filter((id) => id !== shopId);
+          } else {
+            return [...old, shopId];
+          }
+        }
+      );
+
+      return { previousFavorites };
+    },
+    onError: (_err, _variables, context) => {
+      // エラー時はロールバック
+      if (context?.previousFavorites) {
+        queryClient.setQueryData(
+          queryKeys.favorites.lists(),
+          context.previousFavorites
+        );
+      }
+    },
+    onSuccess: () => {
+      // 成功後はキャッシュを再度取得
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.favorites.lists(),
+      });
+    },
+  });
 
   /**
    * ショップがお気に入りかどうかチェック
    */
   const isFavorite = useCallback(
     (shopId: string): boolean => {
-      return favorites.has(shopId);
+      return data.includes(shopId);
     },
-    [favorites]
+    [data]
   );
 
   /**
-   * お気に入りを切り替え（楽観的更新）
+   * お気に入りを切り替え
    */
   const toggleFavorite = useCallback(
     async (shopId: string): Promise<void> => {
@@ -97,72 +132,46 @@ export function useFavorites(isAuthenticated: boolean): UseFavoritesReturn {
         throw new Error('ログインが必要です');
       }
 
-      const isCurrent = isFavorite(shopId);
-      const previousFavorites = new Set(favorites);
-
-      try {
-        // UI を即座に更新（楽観的更新）
-        setTogglingIds((prev) => new Set([...prev, shopId]));
-
-        if (isCurrent) {
-          // 削除
-          const newFavorites = new Set(favorites);
-          newFavorites.delete(shopId);
-          setFavorites(newFavorites);
-
-          await apiService.removeFavorite(shopId);
-        } else {
-          // 追加
-          const newFavorites = new Set(favorites);
-          newFavorites.add(shopId);
-          setFavorites(newFavorites);
-
-          await apiService.addFavorite(shopId);
+      mutateFavorite(
+        {
+          shopId,
+          isCurrentlyFavorite: isFavorite(shopId),
+        },
+        {
+          onError: (err: any) => {
+            const error = err instanceof Error ? err : new Error('操作に失敗しました');
+            throw error;
+          },
         }
-
-        setError(null);
-      } catch (err) {
-        // エラー時はロールバック
-        setFavorites(previousFavorites);
-
-        const error = err instanceof Error ? err : new Error('操作に失敗しました');
-        setError(error);
-        throw error;
-      } finally {
-        setTogglingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(shopId);
-          return next;
-        });
-      }
+      );
     },
-    [isAuthenticated, favorites, isFavorite]
+    [isAuthenticated, isFavorite, mutateFavorite]
   );
 
   /**
    * 指定したショップIDが処理中かどうか
    */
   const isToggling = useCallback(
-    (shopId: string): boolean => {
-      return togglegingIds.has(shopId);
+    (_shopId: string): boolean => {
+      return isPending;
     },
-    [togglegingIds]
+    [isPending]
   );
 
   /**
    * お気に入りを再取得
    */
-  const refetch = useCallback(async (): Promise<void> => {
-    await fetchFavorites();
-  }, [fetchFavorites]);
+  const handleRefetch = async (): Promise<void> => {
+    await refetch();
+  };
 
   return {
-    favorites,
+    favorites: new Set(data),
     isFavorite,
     toggleFavorite,
-    loading,
+    isLoading,
     isToggling,
-    error,
-    refetch,
+    error: error instanceof Error ? error : null,
+    refetch: handleRefetch,
   };
 }
