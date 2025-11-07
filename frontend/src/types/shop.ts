@@ -44,6 +44,13 @@ export interface ShopManager {
   username: string;
   first_name: string;
   last_name: string;
+  email: string;
+  phone?: string;
+  is_active: boolean;
+  last_login_at?: string;
+  created_at: string;
+  shop_id?: string;
+  shop_name?: string;
 }
 
 /**
