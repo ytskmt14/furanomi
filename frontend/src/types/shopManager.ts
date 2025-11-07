@@ -1,81 +1,70 @@
 // 店舗管理者用の型定義
+import { Shop, BusinessHours, ShopManager } from './shop';
 
-export interface ShopManager {
-  id: string;
-  username: string;
+/**
+ * 店舗管理者の詳細情報
+ */
+export interface ShopManagerDetail extends ShopManager {
   email: string;
-  last_name: string;
-  first_name: string;
   phone?: string;
   is_active: boolean;
-  last_login_at?: Date;
-  created_at: Date;
-  updated_at: Date;
+  last_login_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
+/**
+ * スタッフアクセス情報
+ */
 export interface StaffAccess {
   token: string;
   passcode: string;
-  tokenCreatedAt: Date;
+  tokenCreatedAt: string;
   qrCodeUrl: string;
 }
 
-export interface ShopManagerShop {
-  id: string;
-  name: string;
-  description?: string;
-  address: string;
-  phone?: string;
-  email?: string;
-  category: 'restaurant' | 'cafe' | 'izakaya';
-  latitude: number;
-  longitude: number;
-  business_hours: BusinessHours;
-  image_url?: string;
-  is_active: boolean;
+/**
+ * 店舗管理者から見た店舗情報（拡張版）
+ */
+export interface ShopManagerShop extends Shop {
   shop_manager_id?: string;
-  created_at: Date;
-  updated_at: Date;
   availability?: ShopAvailability;
   images?: ShopImage[];
   staff_access?: StaffAccess;
 }
 
-export interface BusinessHours {
-  monday: { open: string; close: string; close_next_day?: boolean };
-  tuesday: { open: string; close: string; close_next_day?: boolean };
-  wednesday: { open: string; close: string; close_next_day?: boolean };
-  thursday: { open: string; close: string; close_next_day?: boolean };
-  friday: { open: string; close: string; close_next_day?: boolean };
-  saturday: { open: string; close: string; close_next_day?: boolean };
-  sunday: { open: string; close: string; close_next_day?: boolean };
-}
-
+/**
+ * 店舗の空き状況
+ */
 export interface ShopAvailability {
   id: string;
   shop_id: string;
   status: 'available' | 'busy' | 'full' | 'closed';
-  updated_at: Date;
+  updated_at: string;
 }
 
+/**
+ * 店舗画像
+ */
 export interface ShopImage {
   id: string;
   shop_id: string;
   image_url: string;
   is_primary: boolean;
-  created_at: Date;
+  created_at: string;
 }
 
 // フォーム用の型定義
 export interface ShopFormData {
   name: string;
-  description: string;
+  description: string | null;
   address: string;
-  phone: string;
-  email: string;
+  postal_code: string | null;
+  phone: string | null;
+  email: string | null;
   category: 'restaurant' | 'cafe' | 'izakaya';
   business_hours: BusinessHours;
-  image_url: string;
+  image_url: string | null;
   is_active?: boolean;
 }
 

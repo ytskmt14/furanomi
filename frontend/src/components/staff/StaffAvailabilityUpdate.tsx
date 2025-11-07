@@ -6,6 +6,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { apiService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
+import { AVAILABILITY_OPTIONS } from '../../constants/availability';
 
 const StaffAvailabilityUpdate: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -134,12 +135,8 @@ const StaffAvailabilityUpdate: React.FC = () => {
     });
   };
 
-  const availabilityOptions = [
-    { value: 'available', label: '空きあり', icon: '🟢', color: 'bg-green-100 text-green-800 border-green-200' },
-    { value: 'busy', label: '混雑', icon: '🟡', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-    { value: 'full', label: '満席', icon: '🔴', color: 'bg-red-100 text-red-800 border-red-200' },
-    { value: 'closed', label: '営業時間外', icon: '⚫', color: 'bg-gray-100 text-gray-800 border-gray-200' },
-  ];
+  // 可用性オプション
+  const availabilityOptions = Object.values(AVAILABILITY_OPTIONS);
 
   if (loading) {
     return (
@@ -274,10 +271,10 @@ const StaffAvailabilityUpdate: React.FC = () => {
               {availabilityOptions.map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => setSelectedStatus(option.value as any)}
+                  onClick={() => setSelectedStatus(option.value)}
                   className={`p-6 rounded-lg border-2 transition-all ${
                     selectedStatus === option.value
-                      ? `${option.color} border-current`
+                      ? `${option.badgeColor} ${option.textColor} ${option.borderColor} border-current`
                       : 'bg-white border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -286,10 +283,7 @@ const StaffAvailabilityUpdate: React.FC = () => {
                     <div className="text-left">
                       <p className="text-xl font-medium">{option.label}</p>
                       <p className="text-sm text-gray-600 mt-1">
-                        {option.value === 'available' && '席に余裕があります'}
-                        {option.value === 'busy' && '混雑していますが入店可能です'}
-                        {option.value === 'full' && '満席です'}
-                        {option.value === 'closed' && '営業時間外です'}
+                        {option.description}
                       </p>
                     </div>
                   </div>
