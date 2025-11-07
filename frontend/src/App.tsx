@@ -1,5 +1,6 @@
 import { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { ShopList } from './components/ShopList';
@@ -18,6 +19,7 @@ import { Toaster } from './components/ui/toaster';
 import { UserProfile } from './components/auth/UserProfile';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ServiceWorkerDebug } from './components/ServiceWorkerDebug';
+import { queryClient } from './lib/queryClient';
 
 // Code Splitting: 管理画面を遅延ロード
 // chunk読み込みエラー時にリトライする仕組みを追加
@@ -312,9 +314,10 @@ function App() {
     );
   }
   return (
-    <ErrorBoundary>
-      <Router>
-          <Routes>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Router>
+            <Routes>
             {/* ランディングページ */}
             <Route path="/lp" element={
               <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
@@ -385,12 +388,13 @@ function App() {
             
             {/* デフォルトは利用者用アプリ */}
             <Route path="/" element={<Navigate to="/user" replace />} />
-          </Routes>
-          <Toaster />
-          <OfflineIndicator />
-          <AppBadgeManager />
-        </Router>
-    </ErrorBoundary>
+            </Routes>
+            <Toaster />
+            <OfflineIndicator />
+            <AppBadgeManager />
+          </Router>
+        </ErrorBoundary>
+      </QueryClientProvider>
   );
 }
 
