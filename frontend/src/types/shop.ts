@@ -94,3 +94,23 @@ export interface SearchFilter {
   availability?: AvailabilityStatus;
   sortBy: 'distance' | 'rating' | 'name';
 }
+
+/**
+ * 店舗フォームデータ
+ */
+export interface ShopFormData {
+  name: string;
+  description: string | null;
+  address: string;
+  postal_code: string | null;
+  formatted_address: string | null;
+  place_id: string | null;
+  phone: string | null;
+  email: string | null;
+  category: ShopCategory;
+  latitude: number;
+  longitude: number;
+  business_hours: BusinessHours;
+  image_url: string | null;
+  is_active: boolean;
+}

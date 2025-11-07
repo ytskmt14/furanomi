@@ -34,7 +34,7 @@ export type ApiErrorCode = typeof API_ERROR_CODES[keyof typeof API_ERROR_CODES];
  * APIエラーの基底クラス
  */
 export class ApiError extends Error {
-  public readonly name = 'ApiError';
+  public name: string = 'ApiError';
   public readonly code: ApiErrorCode;
   public readonly status: number;
   public readonly details?: Record<string, unknown>;
@@ -46,6 +46,7 @@ export class ApiError extends Error {
     details?: Record<string, unknown>
   ) {
     super(message);
+    this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.details = details;
@@ -87,10 +88,9 @@ export class ApiError extends Error {
  * ネットワークエラー
  */
 export class NetworkError extends ApiError {
-  public readonly name = 'NetworkError';
-
   constructor(message: string = 'ネットワークエラー') {
     super(message, 0, 'NETWORK_ERROR');
+    this.name = 'NetworkError';
     Object.setPrototypeOf(this, NetworkError.prototype);
   }
 }
@@ -99,10 +99,9 @@ export class NetworkError extends ApiError {
  * タイムアウトエラー
  */
 export class TimeoutError extends ApiError {
-  public readonly name = 'TimeoutError';
-
   constructor(message: string = 'リクエストタイムアウト') {
     super(message, 0, 'TIMEOUT_ERROR');
+    this.name = 'TimeoutError';
     Object.setPrototypeOf(this, TimeoutError.prototype);
   }
 }
@@ -111,10 +110,9 @@ export class TimeoutError extends ApiError {
  * 認証エラー
  */
 export class AuthenticationError extends ApiError {
-  public readonly name = 'AuthenticationError';
-
   constructor(message: string = 'ログインが必要です') {
     super(message, 401, 'UNAUTHORIZED');
+    this.name = 'AuthenticationError';
     Object.setPrototypeOf(this, AuthenticationError.prototype);
   }
 }
@@ -123,10 +121,9 @@ export class AuthenticationError extends ApiError {
  * 認可エラー
  */
 export class AuthorizationError extends ApiError {
-  public readonly name = 'AuthorizationError';
-
   constructor(message: string = '権限がありません') {
     super(message, 403, 'FORBIDDEN');
+    this.name = 'AuthorizationError';
     Object.setPrototypeOf(this, AuthorizationError.prototype);
   }
 }
@@ -135,13 +132,12 @@ export class AuthorizationError extends ApiError {
  * バリデーションエラー
  */
 export class ValidationError extends ApiError {
-  public readonly name = 'ValidationError';
-
   constructor(
     message: string = '入力値が無効です',
     details?: Record<string, unknown>
   ) {
     super(message, 400, 'VALIDATION_ERROR', details);
+    this.name = 'ValidationError';
     Object.setPrototypeOf(this, ValidationError.prototype);
   }
 }
@@ -150,10 +146,9 @@ export class ValidationError extends ApiError {
  * NotFoundエラー
  */
 export class NotFoundError extends ApiError {
-  public readonly name = 'NotFoundError';
-
   constructor(message: string = 'リソースが見つかりません') {
     super(message, 404, 'NOT_FOUND');
+    this.name = 'NotFoundError';
     Object.setPrototypeOf(this, NotFoundError.prototype);
   }
 }
@@ -162,10 +157,9 @@ export class NotFoundError extends ApiError {
  * Conflictエラー
  */
 export class ConflictError extends ApiError {
-  public readonly name = 'ConflictError';
-
   constructor(message: string = 'リソースが既に存在します') {
     super(message, 409, 'CONFLICT');
+    this.name = 'ConflictError';
     Object.setPrototypeOf(this, ConflictError.prototype);
   }
 }
@@ -174,13 +168,12 @@ export class ConflictError extends ApiError {
  * サーバーエラー
  */
 export class ServerError extends ApiError {
-  public readonly name = 'ServerError';
-
   constructor(
     message: string = 'サーバーエラーが発生しました',
     status: number = 500
   ) {
     super(message, status, 'INTERNAL_SERVER_ERROR');
+    this.name = 'ServerError';
     Object.setPrototypeOf(this, ServerError.prototype);
   }
 }

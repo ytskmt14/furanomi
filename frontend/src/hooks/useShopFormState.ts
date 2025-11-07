@@ -50,12 +50,16 @@ const createDefaultFormData = (): ShopFormData => ({
   description: null,
   address: '',
   postal_code: null,
+  formatted_address: null,
+  place_id: null,
   phone: null,
   email: null,
   category: 'restaurant',
+  latitude: 0,
+  longitude: 0,
   business_hours: createDefaultBusinessHours(),
   image_url: null,
-  is_active: true,
+  is_active: false,
 });
 
 /**
@@ -90,9 +94,13 @@ export function useShopFormState(initialShop?: Shop): UseShopFormStateReturn {
           description: initialShop.description,
           address: initialShop.address,
           postal_code: initialShop.postal_code,
+          formatted_address: initialShop.formatted_address,
+          place_id: initialShop.place_id,
           phone: initialShop.phone,
           email: initialShop.email,
           category: initialShop.category,
+          latitude: initialShop.latitude,
+          longitude: initialShop.longitude,
           business_hours: initialShop.business_hours,
           image_url: initialShop.image_url,
           is_active: initialShop.is_active,
@@ -102,7 +110,6 @@ export function useShopFormState(initialShop?: Shop): UseShopFormStateReturn {
 
   const [formData, setFormData] = useState<ShopFormData>(initialDataRef.current);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [imageBuffer, setImageBuffer] = useState<ArrayBuffer | null>(null);
 
   /**
    * フォームが変更されているかチェック
@@ -113,7 +120,7 @@ export function useShopFormState(initialShop?: Shop): UseShopFormStateReturn {
    * フィールドを更新
    */
   const updateField = useCallback((name: keyof ShopFormData, value: unknown) => {
-    setFormData((prev) => {
+    setFormData((prev: ShopFormData): ShopFormData => {
       const updated = { ...prev, [name]: value };
 
       // フィールド固有の検証
@@ -190,7 +197,7 @@ export function useShopFormState(initialShop?: Shop): UseShopFormStateReturn {
    */
   const updateBusinessHours = useCallback(
     (day: DayOfWeek, field: 'open' | 'close' | 'close_next_day', value: string | boolean) => {
-      setFormData((prev) => ({
+      setFormData((prev: ShopFormData): ShopFormData => ({
         ...prev,
         business_hours: {
           ...prev.business_hours,
@@ -209,8 +216,7 @@ export function useShopFormState(initialShop?: Shop): UseShopFormStateReturn {
    */
   const updateImage = useCallback(async (file: File | null): Promise<void> => {
     if (!file) {
-      setFormData((prev) => ({ ...prev, image_url: null }));
-      setImageBuffer(null);
+      setFormData((prev: ShopFormData): ShopFormData => ({ ...prev, image_url: null }));
       return;
     }
 
@@ -229,11 +235,8 @@ export function useShopFormState(initialShop?: Shop): UseShopFormStateReturn {
 
     return new Promise<void>((resolve, reject) => {
       reader.onload = () => {
-        const buffer = reader.result as ArrayBuffer;
-        setImageBuffer(buffer);
-        // Data URLを作成して プレビュー用に保存
         const dataUrl = URL.createObjectURL(file);
-        setFormData((prev) => ({ ...prev, image_url: dataUrl }));
+        setFormData((prev: ShopFormData): ShopFormData => ({ ...prev, image_url: dataUrl }));
         resolve();
       };
 
@@ -249,15 +252,19 @@ export function useShopFormState(initialShop?: Shop): UseShopFormStateReturn {
    * フォームをリセット
    */
   const resetForm = useCallback((shop?: Shop) => {
-    const newInitialData = shop
+    const newInitialData: ShopFormData = shop
       ? {
           name: shop.name,
           description: shop.description,
           address: shop.address,
           postal_code: shop.postal_code,
+          formatted_address: shop.formatted_address,
+          place_id: shop.place_id,
           phone: shop.phone,
           email: shop.email,
           category: shop.category,
+          latitude: shop.latitude,
+          longitude: shop.longitude,
           business_hours: shop.business_hours,
           image_url: shop.image_url,
           is_active: shop.is_active,
@@ -267,7 +274,6 @@ export function useShopFormState(initialShop?: Shop): UseShopFormStateReturn {
     initialDataRef.current = newInitialData;
     setFormData(newInitialData);
     setErrors({});
-    setImageBuffer(null);
   }, []);
 
   /**
