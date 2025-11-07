@@ -30,7 +30,6 @@ export const ShopsManagement: React.FC = () => {
     updateShop,
     deleteShop,
     refetch,
-    clearMessages,
   } = useShops();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -177,9 +176,8 @@ export const ShopsManagement: React.FC = () => {
           shopId={featureSettingsShop.id}
           shopName={featureSettingsShop.name}
           isOpen={true}
-          onClose={() => setFeatureSettingsShop(null)}
-          onSave={async () => {
-            await refetch();
+          onClose={() => {
+            refetch();
             setFeatureSettingsShop(null);
           }}
         />

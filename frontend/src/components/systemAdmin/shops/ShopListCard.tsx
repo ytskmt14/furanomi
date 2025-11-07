@@ -79,9 +79,9 @@ export const ShopListCard: React.FC<ShopListCardProps> = ({
         </div>
 
         <div className="space-y-2 text-sm text-gray-600 mb-4">
-          {shop.manager_name && (
+          {shop.shop_manager && (
             <div>
-              <span className="text-gray-500">管理者:</span> {shop.manager_name}
+              <span className="text-gray-500">管理者:</span> {shop.shop_manager.first_name} {shop.shop_manager.last_name}
             </div>
           )}
           {shop.phone && (
