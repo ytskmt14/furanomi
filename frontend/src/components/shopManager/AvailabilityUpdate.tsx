@@ -349,6 +349,17 @@ export const AvailabilityUpdate: React.FC = () => {
               <li>• セキュリティのため、定期的に合言葉を再生成してください</li>
             </ul>
           </div>
+
+          {/* セキュリティに関する説明 */}
+          <div className="bg-green-50 border border-green-200 rounded-md p-4">
+            <h4 className="text-sm font-medium text-green-800 mb-2">🔒 セキュリティ機能</h4>
+            <ul className="text-xs text-green-700 space-y-1">
+              <li>• スタッフがURLにアクセスするとトークンはセッションメモリに移動します</li>
+              <li>• ブラウザを閉じるとセッションは自動的に削除されます</li>
+              <li>• URLはブラウザ履歴やサーバーログには保存されません（セッション後）</li>
+              <li>• スタッフ認証後は合言葉入力でのみ操作可能です</li>
+            </ul>
+          </div>
         </CardContent>
       </Card>
     </div>

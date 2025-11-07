@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -9,7 +9,12 @@ import { useToast } from '../../hooks/use-toast';
 
 const StaffAvailabilityUpdate: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const navigate = useNavigate();
+
+  // トークンはURLから取得してセッションストレージに保存
+  const urlToken = searchParams.get('token');
+  const [token, setToken] = useState<string | null>(null);
+
   const { toast } = useToast();
   
   const [passcode, setPasscode] = useState('');
@@ -21,11 +26,28 @@ const StaffAvailabilityUpdate: React.FC = () => {
   const [_shop, setShop] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
+  // 初期化: URLからトークンを取得してセッションストレージに保存
+  useEffect(() => {
+    if (urlToken) {
+      // URLにトークンが含まれている場合、セッションストレージに保存
+      sessionStorage.setItem('staffToken', urlToken);
+      setToken(urlToken);
+      // URLからクエリパラメータを削除（セキュリティ向上）
+      navigate('/staff/availability', { replace: true });
+    } else {
+      // セッションストレージからトークンを復元
+      const storedToken = sessionStorage.getItem('staffToken');
+      if (storedToken) {
+        setToken(storedToken);
+      }
+    }
+  }, [urlToken, navigate]);
+
   // 店舗情報を取得
   useEffect(() => {
     const fetchShop = async () => {
       if (!token) return;
-      
+
       setLoading(true);
       try {
         const shopData = await apiService.getShopByStaffToken(token);
@@ -35,6 +57,9 @@ const StaffAvailabilityUpdate: React.FC = () => {
       } catch (err) {
         console.error('Failed to fetch shop:', err);
         setError('店舗情報の取得に失敗しました');
+        // トークンが無効な場合、セッションをクリア
+        sessionStorage.removeItem('staffToken');
+        setToken(null);
       } finally {
         setLoading(false);
       }
@@ -76,7 +101,7 @@ const StaffAvailabilityUpdate: React.FC = () => {
 
   const handleStatusUpdate = async () => {
     if (!token) return;
-    
+
     setIsUpdating(true);
     setError(null);
 
@@ -93,6 +118,20 @@ const StaffAvailabilityUpdate: React.FC = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  // ログアウト処理
+  const handleLogout = () => {
+    sessionStorage.removeItem('staffToken');
+    setToken(null);
+    setIsAuthenticated(false);
+    setPasscode('');
+    setError(null);
+    toast({
+      title: "ログアウト",
+      description: "セッションを終了しました。",
+      variant: "success",
+    });
   };
 
   const availabilityOptions = [
@@ -206,9 +245,18 @@ const StaffAvailabilityUpdate: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* シンプルなヘッダー */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-semibold text-gray-900 text-center">{shopName}</h1>
-          <p className="text-sm text-gray-600 text-center mt-1">スタッフ用空き状況更新</p>
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex-1 text-center">
+            <h1 className="text-xl font-semibold text-gray-900">{shopName}</h1>
+            <p className="text-sm text-gray-600 mt-1">スタッフ用空き状況更新</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="ml-4 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            title="セッションを終了します"
+          >
+            ログアウト
+          </button>
         </div>
       </header>
 
