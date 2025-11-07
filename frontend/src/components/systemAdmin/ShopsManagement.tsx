@@ -22,7 +22,7 @@ export const ShopsManagement: React.FC = () => {
   const {
     shops,
     shopManagers,
-    loading,
+    isLoading,
     error,
     success,
     featuresMap,
@@ -100,7 +100,7 @@ export const ShopsManagement: React.FC = () => {
     setFeatureSettingsShop({ id: shopId, name: shopName });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-4 px-4 py-6">
         <div>

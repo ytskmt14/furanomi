@@ -1,11 +1,13 @@
 /**
  * 店舗管理カスタムフック
- * 店舗の CRUD 操作とデータ管理
+ * 店舗の CRUD 操作とデータ管理（React Query版）
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../../../../services/api';
 import { Shop } from '../../../../types/shop';
+import { queryKeys } from '../../../../lib/queryKeys';
 
 interface ShopManager {
   id: string;
@@ -24,7 +26,7 @@ interface ShopManager {
 export interface UseShopsReturn {
   shops: Shop[];
   shopManagers: ShopManager[];
-  loading: boolean;
+  isLoading: boolean;
   error: string | null;
   success: string | null;
   featuresMap: Record<string, Record<string, boolean>>;
@@ -36,7 +38,7 @@ export interface UseShopsReturn {
 }
 
 /**
- * 店舗管理フック
+ * 店舗管理フック（React Query版）
  *
  * @returns 店舗管理機能
  *
@@ -46,148 +48,156 @@ export interface UseShopsReturn {
  * ```
  */
 export function useShops(): UseShopsReturn {
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [shopManagers, setShopManagers] = useState<ShopManager[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [success, setSuccess] = useState<string | null>(null);
-  const [featuresMap, setFeaturesMap] = useState<Record<string, Record<string, boolean>>>({});
+  const [error, setError] = useState<string | null>(null);
 
-  /**
-   * 店舗とマネージャー、機能設定を取得
-   */
-  const refetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // 店舗一覧を取得
+  const { data: shopsData = [], isLoading: shopsLoading } = useQuery({
+    queryKey: queryKeys.shops.lists(),
+    queryFn: async () => {
+      const response = await apiService.getShops();
+      return response.shops || [];
+    },
+  });
 
-    try {
-      const [shopsData, managersData] = await Promise.all([
-        apiService.getShops(),
-        apiService.getShopManagers(),
-      ]);
+  // ショップマネージャー一覧を取得
+  const { data: managersData = [], isLoading: managersLoading } = useQuery({
+    queryKey: queryKeys.managers.lists(),
+    queryFn: async () => {
+      const response = await apiService.getShopManagers();
+      return response;
+    },
+  });
 
-      setShops(shopsData.shops || []);
-      setShopManagers(managersData);
+  const isLoading = shopsLoading || managersLoading;
 
-      // 各店舗の機能設定を並列取得
-      try {
-        const results = await Promise.all(
-          (shopsData.shops || []).map(async (shop: Shop) => {
-            try {
-              const res = await apiService.getShopFeatures(shop.id);
-              return [shop.id, res.features || {}] as const;
-            } catch {
-              return [shop.id, {}] as const;
-            }
-          })
-        );
-
-        const map: Record<string, Record<string, boolean>> = {};
-        results.forEach(([id, features]) => {
-          map[id] = features;
-        });
-        setFeaturesMap(map);
-      } catch (e) {
-        console.warn('Failed to load features for shops', e);
-      }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'データの取得に失敗しました';
-      setError(errorMsg);
-      console.error('Failed to fetch data:', err);
-    } finally {
-      setLoading(false);
+  // 各店舗の機能設定を取得し、マップを構築
+  const featuresMap: Record<string, Record<string, boolean>> = {};
+  shopsData.forEach((shop) => {
+    // Each shop will individually use useShopFeatures hook if needed
+    // For admin list view, we use the cached data from each shop's query
+    const cachedFeatures = queryClient.getQueryData(
+      queryKeys.shops.features(shop.id)
+    );
+    if (cachedFeatures) {
+      featuresMap[shop.id] = cachedFeatures as Record<string, boolean>;
     }
-  }, []);
+  });
 
-  /**
-   * 店舗を作成
-   */
+  // 店舗作成ミューテーション
+  const { mutateAsync: createShopMutation } = useMutation({
+    mutationFn: async ({
+      shopData,
+      managerData,
+    }: {
+      shopData: any;
+      managerData?: any;
+    }) => {
+      if (managerData) {
+        await apiService.createShopManager(managerData);
+      }
+      await apiService.createShop(shopData);
+    },
+    onSuccess: () => {
+      setSuccess('店舗を作成しました');
+      queryClient.invalidateQueries({ queryKey: queryKeys.shops.lists() });
+    },
+    onError: (err: any) => {
+      const errorMsg = err instanceof Error ? err.message : '店舗の作成に失敗しました';
+      setError(errorMsg);
+    },
+  });
+
+  // 店舗更新ミューテーション
+  const { mutateAsync: updateShopMutation } = useMutation({
+    mutationFn: async ({
+      shopId,
+      shopData,
+    }: {
+      shopId: string;
+      shopData: any;
+    }) => {
+      await apiService.updateShop(shopId, shopData);
+    },
+    onSuccess: () => {
+      setSuccess('店舗を更新しました');
+      queryClient.invalidateQueries({ queryKey: queryKeys.shops.lists() });
+    },
+    onError: (err: any) => {
+      const errorMsg = err instanceof Error ? err.message : '店舗の更新に失敗しました';
+      setError(errorMsg);
+    },
+  });
+
+  // 店舗削除ミューテーション
+  const { mutateAsync: deleteShopMutation } = useMutation({
+    mutationFn: async (shopId: string) => {
+      await apiService.deleteShop(shopId);
+    },
+    onSuccess: () => {
+      setSuccess('店舗を削除しました');
+      queryClient.invalidateQueries({ queryKey: queryKeys.shops.lists() });
+    },
+    onError: (err: any) => {
+      const errorMsg = err instanceof Error ? err.message : '店舗の削除に失敗しました';
+      setError(errorMsg);
+    },
+  });
+
+  // ラッパー関数
   const createShop = useCallback(
     async (shopData: any, managerData?: any) => {
       setError(null);
-
       try {
-        // 新しいマネージャーが必要な場合は先に作成
-        if (managerData) {
-          await apiService.createShopManager(managerData);
-        }
-
-        // 店舗を作成
-        await apiService.createShop(shopData);
-        setSuccess('店舗を作成しました');
-
-        // データを再取得
-        await refetch();
+        await createShopMutation({ shopData, managerData });
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : '店舗の作成に失敗しました';
-        setError(errorMsg);
         throw err;
       }
     },
-    [refetch]
+    [createShopMutation]
   );
 
-  /**
-   * 店舗を更新
-   */
   const updateShop = useCallback(
     async (shopId: string, shopData: any) => {
       setError(null);
-
       try {
-        await apiService.updateShop(shopId, shopData);
-        setSuccess('店舗を更新しました');
-
-        // データを再取得
-        await refetch();
+        await updateShopMutation({ shopId, shopData });
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : '店舗の更新に失敗しました';
-        setError(errorMsg);
         throw err;
       }
     },
-    [refetch]
+    [updateShopMutation]
   );
 
-  /**
-   * 店舗を削除
-   */
   const deleteShop = useCallback(
     async (shopId: string) => {
       setError(null);
-
       try {
-        await apiService.deleteShop(shopId);
-        setSuccess('店舗を削除しました');
-
-        // データを再取得
-        await refetch();
+        await deleteShopMutation(shopId);
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : '店舗の削除に失敗しました';
-        setError(errorMsg);
         throw err;
       }
     },
-    [refetch]
+    [deleteShopMutation]
   );
 
-  /**
-   * メッセージをクリア
-   */
+  const refetch = useCallback(async () => {
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: queryKeys.shops.lists() }),
+      queryClient.refetchQueries({ queryKey: queryKeys.managers.lists() }),
+    ]);
+  }, [queryClient]);
+
   const clearMessages = useCallback(() => {
     setError(null);
     setSuccess(null);
   }, []);
 
-  // 初回ロード時にデータを取得
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
   return {
-    shops,
-    shopManagers,
-    loading,
+    shops: shopsData,
+    shopManagers: managersData,
+    isLoading,
     error,
     success,
     featuresMap,
