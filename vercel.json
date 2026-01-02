@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd frontend && npm run build && cp public/sitemap.xml public/robots.txt dist/",
+  "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
