@@ -19,7 +19,6 @@ import { Toaster } from './components/ui/toaster';
 import { UserProfile } from './components/auth/UserProfile';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ServiceWorkerDebug } from './components/ServiceWorkerDebug';
-import { SEO } from './components/SEO';
 import { queryClient } from './lib/queryClient';
 
 // Code Splitting: 管理画面を遅延ロード
@@ -192,9 +191,7 @@ const UserApp: React.FC = () => {
   ), [filteredShops, userLocation, handleShopSelect]);
 
   return (
-    <>
-      <SEO />
-      <Layout userLocation={userLocation}>
+    <Layout userLocation={userLocation}>
         <div className="w-full">
         <div className="flex justify-center gap-2 mb-4 sm:mb-6 md:mb-8">
           <Button
@@ -255,7 +252,6 @@ const UserApp: React.FC = () => {
         <PWAInstallPrompt />
       </div>
     </Layout>
-    </>
   );
 };
 

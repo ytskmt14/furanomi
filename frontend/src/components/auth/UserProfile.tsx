@@ -10,7 +10,6 @@ import { useFavorites } from '../../hooks/useFavorites';
 import { Shop } from '../../types/shop';
 import { CreateReservationModal } from '../reservation/CreateReservationModal';
 import { Link } from 'react-router-dom';
-import { SEO } from '../SEO';
 
 export const UserProfile: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -173,13 +172,7 @@ export const UserProfile: React.FC = () => {
   }
 
   return (
-    <>
-      <SEO
-        title="マイプロフィール"
-        description="プロフィール情報の確認・編集"
-        canonical="https://furanomi.com/user/profile"
-      />
-      <div className="max-w-2xl mx-auto p-3 sm:p-4 md:p-6">
+    <div className="max-w-2xl mx-auto p-3 sm:p-4 md:p-6">
       <div className="bg-white rounded-lg shadow p-4 sm:p-6 space-y-4">
         <h2 className="text-lg sm:text-xl font-semibold mb-4 inline-flex items-center gap-2">
           <UserIcon className="w-5 h-5" /> マイプロフィール
@@ -283,6 +276,5 @@ export const UserProfile: React.FC = () => {
         <UserPushNotificationSettings />
       </div>
     </div>
-    </>
   );
 };

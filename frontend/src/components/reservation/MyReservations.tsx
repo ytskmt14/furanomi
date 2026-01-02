@@ -4,7 +4,6 @@ import { apiService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
-import { SEO } from '../SEO';
 
 interface Reservation {
   id: string;
@@ -112,13 +111,7 @@ const MyReservations: React.FC = () => {
 
   if (isLoading) {
     return (
-      <>
-        <SEO
-          title="マイ予約"
-          description="予約一覧の確認・管理"
-          canonical="https://furanomi.com/user/reservations"
-        />
-        <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6">
         <div className="mb-4">
           <Link to="/user" className="text-blue-600 hover:text-blue-800 text-sm">
             ← 店舗一覧に戻る
@@ -130,18 +123,11 @@ const MyReservations: React.FC = () => {
           <p className="text-gray-600">読み込み中...</p>
         </div>
       </div>
-      </>
     );
   }
 
   return (
-    <>
-      <SEO
-        title="マイ予約"
-        description="予約一覧の確認・管理"
-        canonical="https://furanomi.com/user/reservations"
-      />
-      <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
+    <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
       <div className="mb-3 sm:mb-4">
         <Link to="/user" className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm">
           ← 店舗一覧に戻る
@@ -206,7 +192,6 @@ const MyReservations: React.FC = () => {
         </div>
       )}
     </div>
-    </>
   );
 };
 
