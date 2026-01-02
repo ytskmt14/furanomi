@@ -4,6 +4,16 @@ import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useToast } from '../../hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog';
+import { Label } from '../ui/label';
+import { Input } from '../ui/input';
 
 interface Reservation {
   id: string;
@@ -13,6 +23,7 @@ interface Reservation {
   partySize: number;
   arrivalTimeEstimate: string;
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,6 +39,9 @@ export const ReservationManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -99,22 +113,31 @@ export const ReservationManagement: React.FC = () => {
     }
   };
 
-  const handleReject = async (reservationId: string) => {
-    if (processingId) return;
+  const handleRejectClick = (reservationId: string) => {
+    setSelectedReservationId(reservationId);
+    setRejectionReason('');
+    setRejectDialogOpen(true);
+  };
+
+  const handleReject = async () => {
+    if (!selectedReservationId || processingId) return;
 
     try {
-      setProcessingId(reservationId);
-      await apiService.rejectReservation(reservationId);
+      setProcessingId(selectedReservationId);
+      await apiService.rejectReservation(selectedReservationId, rejectionReason || undefined);
       toast({
-        title: '予約を拒否しました',
-        description: '予約が拒否されました',
+        title: '予約をお断りしました',
+        description: '予約をお断りしました',
       });
+      setRejectDialogOpen(false);
+      setSelectedReservationId(null);
+      setRejectionReason('');
       await fetchShopAndReservations();
     } catch (err) {
       console.error('Failed to reject reservation:', err);
       toast({
         title: 'エラー',
-        description: '予約の拒否に失敗しました',
+        description: '予約のお断りに失敗しました',
         variant: 'destructive',
       });
     } finally {
@@ -129,7 +152,7 @@ export const ReservationManagement: React.FC = () => {
       case 'approved':
         return <Badge className="bg-green-100 text-green-800">承認済み</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-100 text-red-800">拒否</Badge>;
+        return <Badge className="bg-red-100 text-red-800">お断り</Badge>;
       case 'cancelled':
         return <Badge className="bg-gray-100 text-gray-800">キャンセル</Badge>;
       default:
@@ -248,6 +271,13 @@ export const ReservationManagement: React.FC = () => {
                     </div>
                   </div>
 
+                  {reservation.status === 'rejected' && reservation.rejectionReason && (
+                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm font-medium text-red-800 mb-1">お断り理由</p>
+                      <p className="text-sm text-red-700">{reservation.rejectionReason}</p>
+                    </div>
+                  )}
+
                   {reservation.status === 'pending' && (
                     <div className="flex gap-2 pt-2">
                       <Button
@@ -258,12 +288,12 @@ export const ReservationManagement: React.FC = () => {
                         ✓ 承認
                       </Button>
                       <Button
-                        onClick={() => handleReject(reservation.id)}
+                        onClick={() => handleRejectClick(reservation.id)}
                         disabled={processingId === reservation.id}
                         variant="destructive"
                         className="flex-1"
                       >
-                        ✕ 拒否
+                        ✕ お断り
                       </Button>
                     </div>
                   )}
@@ -273,6 +303,48 @@ export const ReservationManagement: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* お断り理由入力ダイアログ */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>予約をお断り</DialogTitle>
+            <DialogDescription>
+              予約をお断りする理由を入力してください（任意）。この理由は利用者に表示されます。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejection-reason">お断り理由</Label>
+              <Input
+                id="rejection-reason"
+                placeholder="例：満席のため、営業時間外のため など"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRejectDialogOpen(false);
+                setSelectedReservationId(null);
+                setRejectionReason('');
+              }}
+            >
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={processingId !== null}
+            >
+              {processingId ? '処理中...' : 'お断りする'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

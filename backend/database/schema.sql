@@ -58,6 +58,10 @@ CREATE TABLE shops (
     image_url TEXT,
     is_active BOOLEAN DEFAULT true,
     shop_manager_id UUID REFERENCES shop_managers(id) ON DELETE SET NULL,
+    -- スタッフ用QRコード機能
+    staff_access_token UUID DEFAULT uuid_generate_v4(),
+    staff_passcode VARCHAR(4) DEFAULT NULL,
+    staff_token_created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -125,6 +129,7 @@ CREATE TABLE IF NOT EXISTS reservations (
     party_size INTEGER NOT NULL CHECK (party_size > 0),
     arrival_time_estimate VARCHAR(20) NOT NULL,
     status VARCHAR(20) NOT NULL CHECK (status IN ('pending','approved','rejected','cancelled')),
+    rejection_reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -165,6 +170,16 @@ CREATE INDEX IF NOT EXISTS idx_reservations_user ON reservations(user_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_shop ON reservations(shop_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
 CREATE INDEX IF NOT EXISTS idx_push_subs_manager ON push_subscriptions(shop_manager_id);
+
+-- スタッフ用アクセストークンのユニーク制約
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'shops_staff_access_token_unique'
+  ) THEN
+    ALTER TABLE shops ADD CONSTRAINT shops_staff_access_token_unique UNIQUE (staff_access_token);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_user_push_subs_user ON user_push_subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_shop_feature_settings_shop_id ON shop_feature_settings(shop_id);
 CREATE INDEX IF NOT EXISTS idx_shop_feature_settings_feature_name ON shop_feature_settings(feature_name);

@@ -11,7 +11,7 @@ ON CONFLICT (key) DO NOTHING;
 
 -- システム管理者の初期データ
 INSERT INTO system_admins (username, email, password_hash, first_name, last_name) VALUES
-('admin', 'admin@furanomi.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/9KzKz2K', 'システム', '管理者')
+('admin', 'admin@furanomi.com', '$2b$12$d7U4d7DKiVEubzsPmiLW2OeXr5LsezT0EzNyktPaZZWjFqPXc6z/C', 'システム', '管理者')
 ON CONFLICT (username) DO NOTHING;
 -- パスワード: admin123
 

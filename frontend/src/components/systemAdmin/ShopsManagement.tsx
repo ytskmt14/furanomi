@@ -8,7 +8,9 @@ import { Button } from '../ui/button';
 import { useShops } from './shops/hooks/useShops';
 import { ShopListCard } from './shops/ShopListCard';
 import { ShopFormModal } from './shops/ShopFormModal';
+import { ShopOnboardingFlow } from './shops/ShopOnboardingFlow';
 import { ShopFeatureSettingsModal } from './ShopFeatureSettingsModal';
+import { Shop } from '@/types/shop';
 
 /**
  * 店舗管理コンポーネント
@@ -33,6 +35,7 @@ export const ShopsManagement: React.FC = () => {
   } = useShops();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<any>(null);
   const [featureSettingsShop, setFeatureSettingsShop] = useState<{ id: string; name: string } | null>(null);
 
@@ -60,7 +63,7 @@ export const ShopsManagement: React.FC = () => {
 
   const handleCreateShop = () => {
     setEditingShop(null);
-    setIsModalOpen(true);
+    setIsOnboardingOpen(true);
   };
 
   const handleEditShop = (shop: any) => {
@@ -71,6 +74,16 @@ export const ShopsManagement: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingShop(null);
+  };
+
+  const handleCloseOnboarding = () => {
+    setIsOnboardingOpen(false);
+  };
+
+  const handleOnboardingComplete = async (_shop: Shop) => {
+    // 登録完了後のコールバック処理
+    await refetch(); // 店舗一覧を更新
+    setIsOnboardingOpen(false);
   };
 
   const handleSubmitForm = async (formData: any, newManagerData: any, managerMode: string) => {
@@ -161,7 +174,18 @@ export const ShopsManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* 店舗フォームモーダル */}
+      {/* 店舗登録フローモーダル（新規登録用） */}
+      <ShopOnboardingFlow
+        isOpen={isOnboardingOpen}
+        onClose={handleCloseOnboarding}
+        onComplete={handleOnboardingComplete}
+        shopManagers={shopManagers.map(manager => ({
+          ...manager,
+          created_at: manager.created_at || new Date().toISOString(),
+        }))}
+      />
+
+      {/* 店舗フォームモーダル（編集用） */}
       <ShopFormModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

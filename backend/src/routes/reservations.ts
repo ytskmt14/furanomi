@@ -211,6 +211,7 @@ router.get('/my', asyncHandler(async (req: Request, res: Response) => {
       partySize: row.party_size,
       arrivalTimeEstimate: row.arrival_time_estimate,
       status: row.status,
+      rejectionReason: row.rejection_reason,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }))
@@ -250,6 +251,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
       partySize: row.party_size,
       arrivalTimeEstimate: row.arrival_time_estimate,
       status: row.status,
+      rejectionReason: row.rejection_reason,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }
@@ -326,6 +328,7 @@ router.get('/shop/:shopId', asyncHandler(async (req: Request, res: Response) => 
       partySize: row.party_size,
       arrivalTimeEstimate: row.arrival_time_estimate,
       status: row.status,
+      rejectionReason: row.rejection_reason,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }))
@@ -370,6 +373,7 @@ router.put('/:id/reject', asyncHandler(async (req: Request, res: Response) => {
   }
 
   const { id } = req.params;
+  const { rejectionReason } = req.body;
 
   // 予約の存在確認
   const checkResult = await db.query(
@@ -381,10 +385,10 @@ router.put('/:id/reject', asyncHandler(async (req: Request, res: Response) => {
     return res.status(404).json({ error: 'Reservation not found' });
   }
 
-  // ステータスを更新
+  // ステータスと理由を更新
   await db.query(
-    'UPDATE reservations SET status = $1 WHERE id = $2',
-    ['rejected', id]
+    'UPDATE reservations SET status = $1, rejection_reason = $2 WHERE id = $3',
+    ['rejected', rejectionReason || null, id]
   );
 
   res.json({ message: 'Reservation rejected successfully' });

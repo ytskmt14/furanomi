@@ -6,7 +6,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../../../../services/api';
-import { Shop } from '../../../../types/shop';
+import { Shop, ShopManager as ShopManagerType } from '../../../../types/shop';
 import { queryKeys } from '../../../../lib/queryKeys';
 
 interface ShopManager {
@@ -18,6 +18,7 @@ interface ShopManager {
   phone?: string;
   is_active: boolean;
   shop_name?: string;
+  created_at?: string;
 }
 
 /**
@@ -196,7 +197,10 @@ export function useShops(): UseShopsReturn {
 
   return {
     shops: shopsData,
-    shopManagers: managersData,
+    shopManagers: managersData.map(manager => ({
+      ...manager,
+      created_at: manager.created_at || new Date().toISOString(),
+    })) as ShopManagerType[],
     isLoading,
     error,
     success,

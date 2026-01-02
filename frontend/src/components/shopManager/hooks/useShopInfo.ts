@@ -17,6 +17,11 @@ export interface ShopFormData {
   phone: string;
   email: string;
   category: 'izakaya' | 'cafe' | 'restaurant';
+  latitude: number;
+  longitude: number;
+  postal_code?: string;
+  formatted_address?: string;
+  place_id?: string;
   business_hours: {
     [key: string]: {
       open: string;
@@ -78,6 +83,11 @@ export function useShopInfo(): UseShopInfoReturn {
     phone: '',
     email: '',
     category: 'izakaya',
+    latitude: 0,
+    longitude: 0,
+    postal_code: '',
+    formatted_address: '',
+    place_id: '',
     business_hours: {
       monday: { open: '', close: '' },
       tuesday: { open: '', close: '' },
@@ -111,6 +121,11 @@ export function useShopInfo(): UseShopInfoReturn {
         phone: shopData.phone || '',
         email: shopData.email || '',
         category: shopData.category || 'izakaya',
+        latitude: shopData.latitude || 0,
+        longitude: shopData.longitude || 0,
+        postal_code: shopData.postal_code || '',
+        formatted_address: shopData.formatted_address || '',
+        place_id: shopData.place_id || '',
         business_hours: shopData.business_hours || {
           monday: { open: '', close: '' },
           tuesday: { open: '', close: '' },
@@ -167,6 +182,7 @@ export function useShopInfo(): UseShopInfoReturn {
 
   /**
    * 店舗情報を保存
+   * 店舗管理者はis_activeと住所関連フィールドを変更できないため、保存時に除外
    */
   const save = useCallback(async () => {
     if (!shop) return;
@@ -174,26 +190,42 @@ export function useShopInfo(): UseShopInfoReturn {
     setIsSaving(true);
 
     try {
-      await apiService.updateShop(shop.id, formData);
+      // 店舗管理者はis_activeと住所関連フィールドを変更できないため、保存時に除外
+      const { 
+        is_active, 
+        address, 
+        postal_code, 
+        formatted_address, 
+        place_id, 
+        latitude, 
+        longitude,
+        ...updateData 
+      } = formData;
+      await apiService.updateShop(shop.id, updateData);
 
       // 保存後に最新の店舗情報を再取得
       const updatedShopData = await apiService.getMyShop();
       setShop(updatedShopData);
-      setFormData({
-        name: updatedShopData.name,
-        description: updatedShopData.description || '',
-        address: updatedShopData.address,
-        phone: updatedShopData.phone || '',
-        email: updatedShopData.email || '',
-        category: updatedShopData.category || 'izakaya',
-        business_hours: updatedShopData.business_hours || {},
-        image_url: updatedShopData.image_url || '',
-        is_active: updatedShopData.is_active || false,
-      });
+        setFormData({
+          name: updatedShopData.name,
+          description: updatedShopData.description || '',
+          address: updatedShopData.address,
+          phone: updatedShopData.phone || '',
+          email: updatedShopData.email || '',
+          category: updatedShopData.category || 'izakaya',
+          latitude: updatedShopData.latitude || 0,
+          longitude: updatedShopData.longitude || 0,
+          postal_code: updatedShopData.postal_code || '',
+          formatted_address: updatedShopData.formatted_address || '',
+          place_id: updatedShopData.place_id || '',
+          business_hours: updatedShopData.business_hours || {},
+          image_url: updatedShopData.image_url || '',
+          is_active: updatedShopData.is_active || false,
+        });
 
       toast({
         title: '保存完了',
-        description: '店舗情報を保存しました！',
+        description: '店舗情報を更新しました',
         variant: 'success',
       });
     } catch (err: any) {
@@ -217,6 +249,11 @@ export function useShopInfo(): UseShopInfoReturn {
           phone: updatedShopData.phone || '',
           email: updatedShopData.email || '',
           category: updatedShopData.category || 'izakaya',
+          latitude: updatedShopData.latitude || 0,
+          longitude: updatedShopData.longitude || 0,
+          postal_code: updatedShopData.postal_code || '',
+          formatted_address: updatedShopData.formatted_address || '',
+          place_id: updatedShopData.place_id || '',
           business_hours: updatedShopData.business_hours || {},
           image_url: updatedShopData.image_url || '',
           is_active: updatedShopData.is_active || false,

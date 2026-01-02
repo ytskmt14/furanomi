@@ -24,7 +24,7 @@ interface AvailabilityBadgeProps {
  */
 export const AvailabilityBadge: React.FC<AvailabilityBadgeProps> = ({ status }) => {
   const getIcon = (availability: AvailabilityStatus) => {
-    const commonClasses = 'w-4 h-4 mr-1 inline-block text-white';
+    const commonClasses = 'w-3 h-3 sm:w-4 sm:h-4 mr-1 inline-block text-white flex-shrink-0';
     switch (availability) {
       case 'available':
         return <CheckCircle className={commonClasses} />;
@@ -56,12 +56,12 @@ export const AvailabilityBadge: React.FC<AvailabilityBadgeProps> = ({ status }) 
 
   return (
     <Badge
-      className={`text-white font-semibold text-xs px-3 py-1.5 rounded-full shadow-lg border-0 ${getBgColor(
+      className={`text-white font-semibold text-xs sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-lg border-0 ${getBgColor(
         status
       )}`}
     >
       <span className="inline-flex items-center">
-        {getIcon(status)} {getAvailabilityText(status)}
+        {getIcon(status)} <span className="whitespace-nowrap">{getAvailabilityText(status)}</span>
       </span>
     </Badge>
   );

@@ -428,9 +428,10 @@ class ApiService {
     });
   }
 
-  async rejectReservation(id: string): Promise<any> {
+  async rejectReservation(id: string, rejectionReason?: string): Promise<any> {
     return this.request<any>(`/reservations/${id}/reject`, {
       method: 'PUT',
+      body: JSON.stringify({ rejectionReason }),
     });
   }
 

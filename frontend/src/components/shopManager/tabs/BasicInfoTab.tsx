@@ -4,13 +4,19 @@
  */
 
 import React from 'react';
-import { Card, CardContent, CardHeader } from '../../ui/card';
+import { Card, CardContent } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { FileUpload } from '../../ui/file-upload';
-import { Switch } from '../../ui/switch';
-import { Wine, Coffee, Utensils, ChevronDown } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../ui/select';
+import { Wine, Coffee, Utensils } from 'lucide-react';
 import { ShopFormData } from '../hooks/useShopInfo';
 
 interface BasicInfoTabProps {
@@ -24,8 +30,6 @@ interface BasicInfoTabProps {
   isSaving: boolean;
   /** 保存ボタンクリック時のコールバック */
   onSave: () => Promise<void>;
-  /** 店舗が公開中か */
-  isActive?: boolean;
 }
 
 /**
@@ -39,7 +43,6 @@ interface BasicInfoTabProps {
  *   onImageChange={handleImageChange}
  *   isSaving={isSaving}
  *   onSave={handleSave}
- *   isActive={isActive}
  * />
  * ```
  */
@@ -49,7 +52,6 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
   onImageChange,
   isSaving,
   onSave,
-  isActive = false,
 }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -94,10 +96,6 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
 
   return (
     <Card className="shadow-sm">
-      <CardHeader>
-        <h3 className="text-lg font-semibold text-gray-900">基本情報</h3>
-        <p className="text-sm text-gray-600">店舗名、説明、カテゴリなどの基本情報</p>
-      </CardHeader>
       <CardContent className="space-y-4">
         <div>
           <Label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -129,43 +127,28 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="address" className="text-sm font-medium text-gray-700">
-            住所 *
-          </Label>
-          <Input
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleInputChange}
-            className="mt-1"
-            placeholder="住所を入力"
-          />
-        </div>
-
-        <div>
           <Label htmlFor="category" className="text-sm font-medium text-gray-700">
             カテゴリ *
           </Label>
-          <div className="mt-1 relative">
-            <select
-              id="category"
-              name="category"
+          <div className="mt-1">
+            <Select
               value={formData.category}
-              onChange={handleInputChange}
-              className="block w-full border border-gray-300 rounded-md pl-10 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+              onValueChange={(value) => onFormChange({ category: value as any })}
             >
-              <option value="izakaya">居酒屋</option>
-              <option value="cafe">カフェ</option>
-              <option value="restaurant">レストラン</option>
-            </select>
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-              {formData.category === 'izakaya' && <Wine className="w-4 h-4 text-gray-500" />}
-              {formData.category === 'cafe' && <Coffee className="w-4 h-4 text-gray-500" />}
-              {formData.category === 'restaurant' && <Utensils className="w-4 h-4 text-gray-500" />}
-            </div>
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </div>
+              <SelectTrigger className="relative pl-10">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center">
+                  {formData.category === 'izakaya' && <Wine className="w-4 h-4 text-gray-500" />}
+                  {formData.category === 'cafe' && <Coffee className="w-4 h-4 text-gray-500" />}
+                  {formData.category === 'restaurant' && <Utensils className="w-4 h-4 text-gray-500" />}
+                </div>
+                <SelectValue placeholder="カテゴリを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="izakaya">居酒屋</SelectItem>
+                <SelectItem value="cafe">カフェ</SelectItem>
+                <SelectItem value="restaurant">レストラン</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -179,28 +162,6 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
               preview={formData.image_url}
               maxSize={5 * 1024 * 1024}
               acceptedTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp']}
-            />
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between py-4 border-t border-gray-200">
-            <div>
-              <Label className="text-sm font-medium text-gray-700">
-                利用者アプリへの公開
-              </Label>
-              <p className="text-xs text-gray-500 mt-1">
-                {isActive
-                  ? '一度公開した店舗は非公開に変更できません。システム管理者にお問い合わせください。'
-                  : '必要な情報を設定したら、こちらを有効にすることで利用者アプリに公開されます。'}
-              </p>
-            </div>
-            <Switch
-              checked={formData.is_active || false}
-              onCheckedChange={(checked) => {
-                onFormChange({ is_active: checked });
-              }}
-              disabled={isActive === true}
             />
           </div>
         </div>

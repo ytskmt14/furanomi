@@ -443,7 +443,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 // 店舗情報更新（店舗管理者のみ）
 router.put('/:id', authenticateToken, requireShopManager, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, description, address, phone, email, category, business_hours, image_url, is_active } = req.body;
+  const { name, description, phone, email, category, business_hours, image_url, is_active } = req.body;
 
   // 店舗が自分のものかチェック
   const shopCheck = await db.query(
@@ -468,15 +468,16 @@ router.put('/:id', authenticateToken, requireShopManager, asyncHandler(async (re
   // is_activeが指定されていない場合は現在の値を維持
   const finalIsActive = is_active !== undefined ? is_active : currentIsActive;
 
+  // 店舗管理者は住所関連フィールドを変更できないため、既存の値を保持
   const result = await db.query(`
     UPDATE shops 
     SET 
-      name = $1, description = $2, address = $3, phone = $4, 
-      email = $5, category = $6, business_hours = $7, image_url = $8,
-      is_active = $9, updated_at = CURRENT_TIMESTAMP
-    WHERE id = $10
+      name = $1, description = $2, phone = $3, 
+      email = $4, category = $5, business_hours = $6, image_url = $7,
+      is_active = $8, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $9
     RETURNING *
-  `, [name, description, address, phone, email, category, business_hours, image_url, finalIsActive, id]);
+  `, [name, description, phone, email, category, business_hours, image_url, finalIsActive, id]);
 
   res.json(result.rows[0]);
 }));

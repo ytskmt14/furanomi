@@ -37,16 +37,15 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
       aria-label="お気に入り"
       onClick={onClick}
       disabled={isLoading}
-      className={`rounded-full p-1.5 text-sm transition-colors flex items-center justify-center ${
+      className={`rounded-full p-1 sm:p-1.5 text-sm transition-colors flex items-center justify-center touch-manipulation ${
         isFavorite
           ? 'text-yellow-600'
           : 'text-gray-600 hover:text-gray-800'
       }`}
     >
       <Star
-        size={20}
         strokeWidth={2}
-        className="inline-block"
+        className="w-[18px] h-[18px] sm:w-5 sm:h-5 inline-block"
         {...(isFavorite
           ? { fill: 'currentColor' }
           : { fill: 'none' })}

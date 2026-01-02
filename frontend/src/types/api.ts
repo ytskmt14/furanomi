@@ -3,7 +3,7 @@
  */
 
 import { Shop } from './shop';
-import { User } from './user';
+import { User } from '../services/api';
 
 /**
  * 汎用 API レスポンス
