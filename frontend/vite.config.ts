@@ -85,28 +85,56 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react/jsx-runtime'],
+  },
   build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // 大きなライブラリを分離
-          if (id.includes('node_modules')) {
-            // React本体を最優先でチェック（他のライブラリより先に）
-            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-              return 'react-vendor';
-            }
-            // Radix UI（React本体を除外）
-            if (id.includes('@radix-ui/')) {
-              return 'radix-ui';
-            }
-            if (id.includes('@googlemaps')) {
-              return 'google-maps';
-            }
-            if (id.includes('lucide-react')) {
-              return 'lucide-icons';
-            }
-            return 'vendor';
+          if (!id.includes('node_modules')) {
+            return;
           }
+          
+          // React本体を最優先で厳密にチェック（パスベース）
+          if (id.match(/[\\/]node_modules[\\/](react|react-dom)([\\/]|$)/)) {
+            return 'react-vendor';
+          }
+          
+          // React Router（Reactに依存）
+          if (id.includes('react-router')) {
+            return 'react-vendor';
+          }
+          
+          // TanStack Query（Reactに依存）
+          if (id.includes('@tanstack/react-query')) {
+            return 'react-vendor';
+          }
+          
+          // Radix UI（Reactに依存、react-vendorの後に読み込まれる）
+          if (id.includes('@radix-ui/')) {
+            return 'radix-ui';
+          }
+          
+          // その他のライブラリ（Reactに依存しない）
+          if (id.includes('@googlemaps')) {
+            return 'google-maps';
+          }
+          if (id.includes('lucide-react')) {
+            return 'lucide-icons';
+          }
+          
+          // vendorチャンクにはReactに依存しないライブラリのみ
+          // Reactに依存する可能性のあるライブラリは除外
+          if (id.includes('react') || id.includes('jsx-runtime')) {
+            return 'react-vendor';
+          }
+          
+          return 'vendor';
         },
       },
     },
