@@ -1,5 +1,4 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
 
 interface SEOProps {
   /** ページタイトル（デフォルト: "ふらのみ - 近くの店舗の空き状況を確認"） */
@@ -37,7 +36,7 @@ export const SEO: React.FC<SEOProps> = ({
   const fullTitle = title.includes('ふらのみ') ? title : `${title} - ふらのみ`;
 
   return (
-    <Helmet>
+    <>
       {/* 基本メタタグ */}
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
@@ -64,7 +63,7 @@ export const SEO: React.FC<SEOProps> = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
-    </Helmet>
+    </>
   );
 };
 

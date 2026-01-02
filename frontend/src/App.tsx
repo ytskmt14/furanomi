@@ -1,7 +1,6 @@
 import { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { ShopList } from './components/ShopList';
@@ -318,10 +317,9 @@ function App() {
     );
   }
   return (
-    <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
-        <ErrorBoundary>
-          <Router>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Router>
             <Routes>
             {/* 利用者用アプリ（ルート表示） */}
             <Route path="/user" element={
@@ -393,7 +391,6 @@ function App() {
           </Router>
         </ErrorBoundary>
       </QueryClientProvider>
-    </HelmetProvider>
   );
 }
 
