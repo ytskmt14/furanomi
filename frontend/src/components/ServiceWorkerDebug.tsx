@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { SEO } from './SEO';
 
 interface ServiceWorkerInfo {
   registered: boolean;
@@ -137,7 +138,14 @@ export const ServiceWorkerDebug: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-4">
+    <>
+      <SEO
+        title="Service Worker デバッグ"
+        description="Service Worker デバッグ情報"
+        canonical="https://furanomi.com/user/debug/sw"
+        noindex={true}
+      />
+      <div className="max-w-2xl mx-auto p-6 space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>Service Worker デバッグ情報</CardTitle>
@@ -234,6 +242,7 @@ export const ServiceWorkerDebug: React.FC = () => {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };
 

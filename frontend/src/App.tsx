@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { ShopList } from './components/ShopList';
@@ -19,6 +20,7 @@ import { Toaster } from './components/ui/toaster';
 import { UserProfile } from './components/auth/UserProfile';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ServiceWorkerDebug } from './components/ServiceWorkerDebug';
+import { SEO } from './components/SEO';
 import { queryClient } from './lib/queryClient';
 
 // Code Splitting: 管理画面を遅延ロード
@@ -56,7 +58,6 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
 const ShopManagerApp = lazyWithRetry(() => import('./components/shopManager/ShopManagerApp'));
 const SystemAdminApp = lazyWithRetry(() => import('./components/systemAdmin/SystemAdminApp'));
 const StaffAvailabilityUpdate = lazyWithRetry(() => import('./components/staff/StaffAvailabilityUpdate'));
-const UserLanding = lazyWithRetry(() => import('./components/landing/UserLanding'));
 const MyReservations = lazyWithRetry(() => import('./components/reservation/MyReservations'));
 
 // アプリ起動時にバッジをクリア
@@ -192,30 +193,32 @@ const UserApp: React.FC = () => {
   ), [filteredShops, userLocation, handleShopSelect]);
 
   return (
-    <Layout userLocation={userLocation}>
-      <div className="w-full">
-        <div className="flex justify-center gap-2 mb-8">
+    <>
+      <SEO />
+      <Layout userLocation={userLocation}>
+        <div className="w-full">
+        <div className="flex justify-center gap-2 mb-4 sm:mb-6 md:mb-8">
           <Button
             variant={viewMode === 'list' ? 'default' : 'outline'}
             onClick={() => setViewMode('list')}
-            className={`px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 flex-1 sm:flex-initial ${
               viewMode === 'list' 
                 ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' 
                 : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm'
             }`}
           >
-            <span className="inline-flex items-center gap-2"><List className="w-4 h-4" /> リスト表示</span>
+            <span className="inline-flex items-center gap-1 sm:gap-2"><List className="w-4 h-4" /> リスト</span>
           </Button>
           <Button
             variant={viewMode === 'map' ? 'default' : 'outline'}
             onClick={() => setViewMode('map')}
-            className={`px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 flex-1 sm:flex-initial ${
               viewMode === 'map' 
                 ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' 
                 : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm'
             }`}
           >
-            <span className="inline-flex items-center gap-2"><Map className="w-4 h-4" /> 地図表示</span>
+            <span className="inline-flex items-center gap-1 sm:gap-2"><Map className="w-4 h-4" /> 地図</span>
           </Button>
         </div>
 
@@ -253,6 +256,7 @@ const UserApp: React.FC = () => {
         <PWAInstallPrompt />
       </div>
     </Layout>
+    </>
   );
 };
 
@@ -314,17 +318,11 @@ function App() {
     );
   }
   return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <Router>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Router>
             <Routes>
-            {/* ランディングページ */}
-            <Route path="/lp" element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p className="text-gray-600">読み込み中...</p></div></div>}>
-                <UserLanding />
-              </Suspense>
-            } />
-            
             {/* 利用者用アプリ（ルート表示） */}
             <Route path="/user" element={
               <AuthProvider>
@@ -395,6 +393,7 @@ function App() {
           </Router>
         </ErrorBoundary>
       </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 

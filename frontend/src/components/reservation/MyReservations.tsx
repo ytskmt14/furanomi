@@ -4,6 +4,7 @@ import { apiService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
+import { SEO } from '../SEO';
 
 interface Reservation {
   id: string;
@@ -14,6 +15,7 @@ interface Reservation {
   partySize: number;
   arrivalTimeEstimate: string;
   status: string;
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -72,7 +74,7 @@ const MyReservations: React.FC = () => {
       case 'approved':
         return '承認済み';
       case 'rejected':
-        return '拒否';
+        return 'お断り';
       case 'cancelled':
         return 'キャンセル済み';
       default:
@@ -110,7 +112,13 @@ const MyReservations: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <>
+        <SEO
+          title="マイ予約"
+          description="予約一覧の確認・管理"
+          canonical="https://furanomi.com/user/reservations"
+        />
+        <div className="max-w-4xl mx-auto p-6">
         <div className="mb-4">
           <Link to="/user" className="text-blue-600 hover:text-blue-800 text-sm">
             ← 店舗一覧に戻る
@@ -122,40 +130,44 @@ const MyReservations: React.FC = () => {
           <p className="text-gray-600">読み込み中...</p>
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-4">
-        <Link to="/user" className="text-blue-600 hover:text-blue-800 text-sm">
+    <>
+      <SEO
+        title="マイ予約"
+        description="予約一覧の確認・管理"
+        canonical="https://furanomi.com/user/reservations"
+      />
+      <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
+      <div className="mb-3 sm:mb-4">
+        <Link to="/user" className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm">
           ← 店舗一覧に戻る
         </Link>
       </div>
-      <h1 className="text-2xl font-bold mb-6">マイ予約</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">マイ予約</h1>
 
       {reservations.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-600">予約はまだありません</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {reservations.map((reservation) => (
-            <Card key={reservation.id} className="p-4">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{reservation.shopName}</h3>
-                  <p className="text-sm text-gray-600">{reservation.shopAddress}</p>
-                  {reservation.shopPhone && (
-                    <p className="text-sm text-gray-600">📞 {reservation.shopPhone}</p>
-                  )}
+            <Card key={reservation.id} className="p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-base sm:text-lg break-words">{reservation.shopName}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 break-words">{reservation.shopAddress}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(reservation.status)}`}>
+                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(reservation.status)}`}>
                   {getStatusText(reservation.status)}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4 text-xs sm:text-sm">
                 <div>
                   <span className="text-gray-600">人数:</span>
                   <span className="ml-2 font-medium">{reservation.partySize}人</span>
@@ -172,6 +184,13 @@ const MyReservations: React.FC = () => {
                 </div>
               </div>
 
+              {reservation.status === 'rejected' && reservation.rejectionReason && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm font-medium text-red-800 mb-1">お断り理由</p>
+                  <p className="text-sm text-red-700">{reservation.rejectionReason}</p>
+                </div>
+              )}
+
               {reservation.status !== 'cancelled' && reservation.status !== 'rejected' && (
                 <Button
                   variant="destructive"
@@ -187,6 +206,7 @@ const MyReservations: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
