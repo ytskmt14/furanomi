@@ -95,54 +95,9 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          if (!id.includes('node_modules')) {
-            return;
-          }
-          
-          // React本体を最優先で厳密にチェック（パスベース）
-          if (id.match(/[\\/]node_modules[\\/](react|react-dom)([\\/]|$)/)) {
-            return 'react-vendor';
-          }
-          
-          // React関連のすべてのライブラリをreact-vendorに集約
-          // React Router
-          if (id.includes('react-router')) {
-            return 'react-vendor';
-          }
-          
-          // TanStack Query
-          if (id.includes('@tanstack/react-query')) {
-            return 'react-vendor';
-          }
-          
-          // Radix UI（Reactに依存）
-          if (id.includes('@radix-ui/')) {
-            return 'radix-ui';
-          }
-          
-          // qrcode.react（Reactに依存）
-          if (id.includes('qrcode.react')) {
-            return 'react-vendor';
-          }
-          
-          // その他のReact依存ライブラリ（より広範囲にチェック）
-          if (id.includes('react') || id.includes('jsx-runtime') || id.includes('scheduler')) {
-            return 'react-vendor';
-          }
-          
-          // その他のライブラリ（Reactに依存しない）
-          if (id.includes('@googlemaps')) {
-            return 'google-maps';
-          }
-          if (id.includes('lucide-react')) {
-            return 'lucide-icons';
-          }
-          
-          // vendorチャンクを削除し、残りをother-vendorに分離
-          // これにより、vendorチャンクにReact依存が含まれることを防ぐ
-          return 'other-vendor';
-        },
+        // manualChunksを無効化して、Viteのデフォルトのチャンク分割を使用
+        // これにより、React依存の問題を回避
+        // manualChunks: undefined,
       },
     },
     assetsDir: 'assets',
