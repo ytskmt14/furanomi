@@ -83,6 +83,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom'],
   },
   build: {
     rollupOptions: {
@@ -90,13 +91,13 @@ export default defineConfig({
         manualChunks: (id) => {
           // 大きなライブラリを分離
           if (id.includes('node_modules')) {
-            // Radix UIを最優先でチェック（react-*を含むため）
+            // React本体を最優先でチェック（他のライブラリより先に）
+            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+              return 'react-vendor';
+            }
+            // Radix UI（React本体を除外）
             if (id.includes('@radix-ui/')) {
               return 'radix-ui';
-            }
-            // React本体（@radix-ui/react-*と競合しないように厳密にチェック）
-            if (id.includes('/react/') || id.includes('/react-dom/')) {
-              return 'react-vendor';
             }
             if (id.includes('@googlemaps')) {
               return 'google-maps';
