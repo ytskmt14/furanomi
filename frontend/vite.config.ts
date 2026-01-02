@@ -105,19 +105,30 @@ export default defineConfig({
             return 'react-vendor';
           }
           
-          // React Router（Reactに依存）
+          // React関連のすべてのライブラリをreact-vendorに集約
+          // React Router
           if (id.includes('react-router')) {
             return 'react-vendor';
           }
           
-          // TanStack Query（Reactに依存）
+          // TanStack Query
           if (id.includes('@tanstack/react-query')) {
             return 'react-vendor';
           }
           
-          // Radix UI（Reactに依存、react-vendorの後に読み込まれる）
+          // Radix UI（Reactに依存）
           if (id.includes('@radix-ui/')) {
             return 'radix-ui';
+          }
+          
+          // qrcode.react（Reactに依存）
+          if (id.includes('qrcode.react')) {
+            return 'react-vendor';
+          }
+          
+          // その他のReact依存ライブラリ（より広範囲にチェック）
+          if (id.includes('react') || id.includes('jsx-runtime') || id.includes('scheduler')) {
+            return 'react-vendor';
           }
           
           // その他のライブラリ（Reactに依存しない）
@@ -128,13 +139,9 @@ export default defineConfig({
             return 'lucide-icons';
           }
           
-          // vendorチャンクにはReactに依存しないライブラリのみ
-          // Reactに依存する可能性のあるライブラリは除外
-          if (id.includes('react') || id.includes('jsx-runtime')) {
-            return 'react-vendor';
-          }
-          
-          return 'vendor';
+          // vendorチャンクを削除し、残りをother-vendorに分離
+          // これにより、vendorチャンクにReact依存が含まれることを防ぐ
+          return 'other-vendor';
         },
       },
     },
