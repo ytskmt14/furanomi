@@ -10,7 +10,6 @@ import { LazyImage } from '../LazyImage';
 import { AvailabilityBadge } from '../shop/AvailabilityBadge';
 import { AddressWithMapLink } from '../shop/AddressWithMapLink';
 import { ShopFormData } from './hooks/useShopInfo';
-import { Clock } from 'lucide-react';
 
 export interface ShopPreviewForManagerProps {
   /** フォームデータ */
@@ -28,28 +27,6 @@ export interface ShopPreviewForManagerProps {
  * ```
  */
 export const ShopPreviewForManager: React.FC<ShopPreviewForManagerProps> = ({ formData }) => {
-  // 営業時間の表示用フォーマット
-  const formatBusinessHours = (day: string) => {
-    const hours = formData.business_hours[day as keyof typeof formData.business_hours];
-    if (!hours || hours.is_closed) {
-      return '休業';
-    }
-    const open = hours.open || '';
-    const close = hours.close || '';
-    const nextDay = hours.close_next_day ? '（翌日）' : '';
-    return `${open} 〜 ${close}${nextDay}`;
-  };
-
-  const DAY_LABELS: Record<string, string> = {
-    monday: '月',
-    tuesday: '火',
-    wednesday: '水',
-    thursday: '木',
-    friday: '金',
-    saturday: '土',
-    sunday: '日',
-  };
-
   return (
     <div className="space-y-4">
       <Card className="shadow-sm border-2 border-blue-200">

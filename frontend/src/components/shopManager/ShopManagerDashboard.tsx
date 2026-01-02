@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { apiService } from '../../services/api';
 import { useToast } from '../../hooks/use-toast';
-import { Utensils, Coffee, Wine, Store, Eye, RefreshCw } from 'lucide-react';
+import { Eye, RefreshCw } from 'lucide-react';
 import { ShopPreviewForManager } from './ShopPreviewForManager';
 import { ShopFormData } from './hooks/useShopInfo';
 
@@ -31,20 +31,6 @@ export const ShopManagerDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState('closed');
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const getCategoryIcon = (category: string) => {
-    const iconProps = { className: 'w-6 h-6 text-blue-600' } as const;
-    switch (category) {
-      case 'restaurant':
-        return <Utensils {...iconProps} />;
-      case 'cafe':
-        return <Coffee {...iconProps} />;
-      case 'izakaya':
-        return <Wine {...iconProps} />;
-      default:
-        return <Store {...iconProps} />;
-    }
-  };
 
   useEffect(() => {
     const fetchShop = async () => {
@@ -166,8 +152,6 @@ export const ShopManagerDashboard: React.FC = () => {
     status: shop.availability_status,
     updated_at: shop.availability_updated_at
   };
-
-  const isUnpublished = shop && !shop.is_active;
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-20 md:pb-6">

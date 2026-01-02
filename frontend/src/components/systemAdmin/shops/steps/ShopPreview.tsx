@@ -27,28 +27,6 @@ export interface ShopPreviewProps {
  * ```
  */
 export const ShopPreview: React.FC<ShopPreviewProps> = ({ formData }) => {
-  // 営業時間の表示用フォーマット
-  const formatBusinessHours = (day: string) => {
-    const hours = formData.business_hours[day as keyof typeof formData.business_hours];
-    if (!hours || hours.is_closed) {
-      return '休業';
-    }
-    const open = hours.open || '';
-    const close = hours.close || '';
-    const nextDay = hours.close_next_day ? '（翌日）' : '';
-    return `${open} 〜 ${close}${nextDay}`;
-  };
-
-  const DAY_LABELS: Record<string, string> = {
-    monday: '月',
-    tuesday: '火',
-    wednesday: '水',
-    thursday: '木',
-    friday: '金',
-    saturday: '土',
-    sunday: '日',
-  };
-
   return (
     <Card className="shadow-sm border-2 border-blue-200">
       {/* 店舗画像 */}
