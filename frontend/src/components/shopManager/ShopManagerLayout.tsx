@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiService, User } from '../../services/api';
 import { LayoutDashboard, Store, CalendarDays, Settings as SettingsIcon, LogOut, Menu, X } from 'lucide-react';
+import { PWAInstallPrompt } from '../PWAInstallPrompt';
 
 interface ShopManagerLayoutProps {
   children: React.ReactNode;
@@ -327,6 +328,9 @@ export const ShopManagerLayout: React.FC<ShopManagerLayoutProps> = ({ children }
           </Link>
         </div>
       </div>
+
+      {/* PWAインストールプロンプト */}
+      <PWAInstallPrompt />
     </div>
   );
 };
