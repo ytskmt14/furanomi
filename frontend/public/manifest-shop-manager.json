@@ -1,0 +1,27 @@
+{
+  "name": "ふらのみ（店舗管理）- 店舗・予約管理",
+  "short_name": "ふらのみ管理",
+  "description": "店舗の空き状況管理、予約管理、スタッフ管理を行います",
+  "start_url": "/shop-manager",
+  "scope": "/shop-manager",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10B981",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-128x128.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-256x256.svg",
+      "sizes": "256x256",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": []
+}

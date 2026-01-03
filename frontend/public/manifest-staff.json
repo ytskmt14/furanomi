@@ -1,0 +1,27 @@
+{
+  "name": "ふらのみ（スタッフ）- 勤務状況管理",
+  "short_name": "ふらのみスタッフ",
+  "description": "スタッフの勤務可能状況を管理します",
+  "start_url": "/staff/availability",
+  "scope": "/staff",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#F59E0B",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-128x128.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-256x256.svg",
+      "sizes": "256x256",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": []
+}

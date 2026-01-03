@@ -1,0 +1,27 @@
+{
+  "name": "ふらのみ（システム管理）- システム設定",
+  "short_name": "ふらのみAdmin",
+  "description": "システム全体の管理・設定を行います",
+  "start_url": "/system-admin",
+  "scope": "/system-admin",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#EF4444",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-128x128.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-256x256.svg",
+      "sizes": "256x256",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": []
+}

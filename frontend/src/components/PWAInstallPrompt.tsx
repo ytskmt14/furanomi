@@ -11,11 +11,21 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                      (window.navigator as any).standalone === true;
 
+// 現在のパスタイプを取得
+const getPathType = (path: string): string => {
+  if (path.startsWith('/shop-manager')) return 'shop-manager';
+  if (path.startsWith('/staff')) return 'staff';
+  if (path.startsWith('/system-admin')) return 'system-admin';
+  if (path.startsWith('/user')) return 'user';
+  return 'user'; // デフォルト
+};
+
 export const PWAInstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [isInstalled, setIsInstalled] = useState(isStandalone);
+  const currentPathType = getPathType(window.location.pathname);
 
   useEffect(() => {
     // PWAが既にインストールされているか確認
@@ -27,7 +37,8 @@ export const PWAInstallPrompt: React.FC = () => {
     // iOS向け: ページロード時に暫定的にURLパスを保存
     // （ユーザーがインストールボタンをクリックせずに直接ホーム画面に追加する場合に備える）
     if (isIOS) {
-      const existingData = localStorage.getItem('pwa-install-path');
+      const storageKey = `pwa-install-path-${currentPathType}`;
+      const existingData = localStorage.getItem(storageKey);
       let shouldSave = true;
 
       // 既に「確定」フラグ付きで保存されている場合は上書きしない
@@ -36,7 +47,7 @@ export const PWAInstallPrompt: React.FC = () => {
           const { confirmed } = JSON.parse(existingData);
           if (confirmed) {
             shouldSave = false;
-            console.log('[PWA] iOS: Skipping save - confirmed path already exists');
+            console.log('[PWA] iOS: Skipping save - confirmed path already exists for', currentPathType);
           }
         } catch (e) {
           // パースエラーの場合は上書き
@@ -47,11 +58,14 @@ export const PWAInstallPrompt: React.FC = () => {
         const currentPath = window.location.pathname;
         const pathData = {
           path: currentPath,
+          pathType: currentPathType,
           timestamp: Date.now(),
           confirmed: false // 暫定的な保存
         };
+        localStorage.setItem(storageKey, JSON.stringify(pathData));
+        // 共通のキーにも保存（後方互換性のため）
         localStorage.setItem('pwa-install-path', JSON.stringify(pathData));
-        console.log('[PWA] iOS: Tentative path saved:', currentPath);
+        console.log('[PWA] iOS: Tentative path saved:', currentPath, 'type:', currentPathType);
       }
     }
 
@@ -69,13 +83,18 @@ export const PWAInstallPrompt: React.FC = () => {
       const handleAppInstalled = () => {
         // インストール時のURLパスを「確定」として保存（上書き不可）
         const currentPath = window.location.pathname;
+        const pathType = getPathType(currentPath);
+        const storageKey = `pwa-install-path-${pathType}`;
         const pathData = {
           path: currentPath,
+          pathType: pathType,
           timestamp: Date.now(),
           confirmed: true // 確定フラグ
         };
+        localStorage.setItem(storageKey, JSON.stringify(pathData));
+        // 共通のキーにも保存（後方互換性のため）
         localStorage.setItem('pwa-install-path', JSON.stringify(pathData));
-        console.log('[PWA] Confirmed installation path saved:', currentPath);
+        console.log('[PWA] Confirmed installation path saved:', currentPath, 'type:', pathType);
         setIsInstalled(true);
         setShowPrompt(false);
       };
@@ -104,17 +123,23 @@ export const PWAInstallPrompt: React.FC = () => {
   }, []);
 
   const handleInstallClick = async () => {
+    const currentPath = window.location.pathname;
+    const pathType = getPathType(currentPath);
+    const storageKey = `pwa-install-path-${pathType}`;
+
     if (isIOS) {
       // iOSの場合は手順を表示
       // この時点でURLパスを「確定」として保存（上書き不可）
-      const currentPath = window.location.pathname;
       const pathData = {
         path: currentPath,
+        pathType: pathType,
         timestamp: Date.now(),
         confirmed: true // 確定フラグ
       };
+      localStorage.setItem(storageKey, JSON.stringify(pathData));
+      // 共通のキーにも保存（後方互換性のため）
       localStorage.setItem('pwa-install-path', JSON.stringify(pathData));
-      console.log('[PWA] iOS: Confirmed path saved when showing instructions:', currentPath);
+      console.log('[PWA] iOS: Confirmed path saved when showing instructions:', currentPath, 'type:', pathType);
       setShowIOSInstructions(true);
       return;
     }
@@ -122,22 +147,24 @@ export const PWAInstallPrompt: React.FC = () => {
     if (!deferredPrompt) return;
 
     // インストール時のURLパスを「確定」として保存（上書き不可）
-    const currentPath = window.location.pathname;
     const pathData = {
       path: currentPath,
+      pathType: pathType,
       timestamp: Date.now(),
       confirmed: true // 確定フラグ
     };
+    localStorage.setItem(storageKey, JSON.stringify(pathData));
+    // 共通のキーにも保存（後方互換性のため）
     localStorage.setItem('pwa-install-path', JSON.stringify(pathData));
-    console.log('[PWA] Confirmed installation path saved before prompt:', currentPath);
+    console.log('[PWA] Confirmed installation path saved before prompt:', currentPath, 'type:', pathType);
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
+
     if (outcome === 'accepted') {
       setShowPrompt(false);
     }
-    
+
     setDeferredPrompt(null);
   };
 

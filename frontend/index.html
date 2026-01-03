@@ -45,7 +45,51 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     
-    <!-- PWA Manifest - vite-plugin-pwa will inject this automatically -->
+    <!-- PWA Manifest - パスに応じて動的に設定 -->
+    <script>
+      (function() {
+        // 現在のパスに応じて適切なmanifestを選択
+        const path = window.location.pathname;
+        let manifestPath = '/manifest.json'; // デフォルト
+
+        if (path.startsWith('/shop-manager')) {
+          manifestPath = '/manifest-shop-manager.json';
+        } else if (path.startsWith('/staff')) {
+          manifestPath = '/manifest-staff.json';
+        } else if (path.startsWith('/system-admin')) {
+          manifestPath = '/manifest-system-admin.json';
+        } else if (path.startsWith('/user')) {
+          manifestPath = '/manifest-user.json';
+        } else if (path === '/') {
+          // ルートの場合は、保存されたパス情報から判断
+          const installPathData = localStorage.getItem('pwa-install-path');
+          if (installPathData) {
+            try {
+              const { path: savedPath } = JSON.parse(installPathData);
+              if (savedPath && savedPath.startsWith('/shop-manager')) {
+                manifestPath = '/manifest-shop-manager.json';
+              } else if (savedPath && savedPath.startsWith('/staff')) {
+                manifestPath = '/manifest-staff.json';
+              } else if (savedPath && savedPath.startsWith('/system-admin')) {
+                manifestPath = '/manifest-system-admin.json';
+              } else if (savedPath && savedPath.startsWith('/user')) {
+                manifestPath = '/manifest-user.json';
+              }
+            } catch (e) {
+              // パースエラーの場合はデフォルトを使用
+            }
+          }
+        }
+
+        // manifestリンクを動的に追加
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestPath;
+        document.head.appendChild(link);
+
+        console.log('[PWA] Manifest loaded:', manifestPath);
+      })();
+    </script>
     
     <!-- Google Search Console所有権確認 -->
     <meta name="google-site-verification" content="m01IEvURxKgXdvDq1KZ0OBy60S3M-Cp0uDqwcQrrhFE" />

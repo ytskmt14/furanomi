@@ -1,0 +1,27 @@
+{
+  "name": "ふらのみ（利用者）- 近くのお店の空き状況を確認",
+  "short_name": "ふらのみ",
+  "description": "居酒屋・カフェ・レストランの空き状況をリアルタイムで確認できます",
+  "start_url": "/user",
+  "scope": "/user",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-128x128.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-256x256.svg",
+      "sizes": "256x256",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle", "utilities"],
+  "screenshots": []
+}
