@@ -310,6 +310,21 @@ function App() {
     setEnvCheckPassed(envValid);
   }, []);
 
+  // iOS向け: 通常のブラウザモードでページが読み込まれた時、URLパスを保存
+  // （iOSではbeforeinstallprompt/appinstalledイベントが発火しないため）
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                         (window.navigator as any).standalone === true;
+    
+    // iOSかつ通常のブラウザモードの場合、URLパスを保存
+    if (isIOS && !isStandalone) {
+      const currentPath = window.location.pathname;
+      localStorage.setItem('pwa-install-path', currentPath);
+      console.log('[PWA] iOS: Current path saved:', currentPath);
+    }
+  }, []);
+
   if (!envCheckPassed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">

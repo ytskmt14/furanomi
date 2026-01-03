@@ -24,6 +24,14 @@ export const PWAInstallPrompt: React.FC = () => {
       return;
     }
 
+    // iOS向け: 通常のブラウザモードでページが読み込まれた時、URLパスを保存
+    // （iOSではbeforeinstallprompt/appinstalledイベントが発火しないため）
+    if (isIOS) {
+      const currentPath = window.location.pathname;
+      localStorage.setItem('pwa-install-path', currentPath);
+      console.log('[PWA] iOS: Current path saved for potential installation:', currentPath);
+    }
+
     // Android/Chrome向け: beforeinstallprompt イベントをキャプチャ
     if (!isIOS) {
       const handleBeforeInstallPrompt = (e: Event) => {
@@ -70,6 +78,10 @@ export const PWAInstallPrompt: React.FC = () => {
   const handleInstallClick = async () => {
     if (isIOS) {
       // iOSの場合は手順を表示
+      // この時点でURLパスを保存（ユーザーがインストール手順を見ている時点）
+      const currentPath = window.location.pathname;
+      localStorage.setItem('pwa-install-path', currentPath);
+      console.log('[PWA] iOS: Path saved when showing instructions:', currentPath);
       setShowIOSInstructions(true);
       return;
     }
