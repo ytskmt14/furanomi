@@ -36,6 +36,10 @@ export const PWAInstallPrompt: React.FC = () => {
 
       // appinstalledイベント（インストール完了時に発火）
       const handleAppInstalled = () => {
+        // インストール時のURLパスを保存
+        const currentPath = window.location.pathname;
+        localStorage.setItem('pwa-install-path', currentPath);
+        console.log('[PWA] Installation path saved:', currentPath);
         setIsInstalled(true);
         setShowPrompt(false);
       };
@@ -71,6 +75,11 @@ export const PWAInstallPrompt: React.FC = () => {
     }
 
     if (!deferredPrompt) return;
+
+    // インストール時のURLパスを事前に保存
+    const currentPath = window.location.pathname;
+    localStorage.setItem('pwa-install-path', currentPath);
+    console.log('[PWA] Installation path saved before prompt:', currentPath);
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;

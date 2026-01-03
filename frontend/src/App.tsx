@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
@@ -277,6 +277,31 @@ const checkEnvironmentVariables = () => {
   return true;
 };
 
+// PWA起動時のリダイレクト処理コンポーネント
+const PWARedirect: React.FC = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    // PWAとして起動した場合（standaloneモード）かつルート（/）にアクセスした場合
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                         (window.navigator as any).standalone === true;
+    
+    if (isStandalone && location.pathname === '/') {
+      // インストール時に記録されたURLパスを取得
+      const installPath = localStorage.getItem('pwa-install-path');
+      
+      if (installPath && installPath !== '/') {
+        console.log('[PWA] Redirecting to installation path:', installPath);
+        // 記録されたパスにリダイレクト（React Routerを使用）
+        window.location.replace(installPath);
+        return;
+      }
+    }
+  }, [location.pathname]);
+  
+  return null;
+};
+
 function App() {
   const [envCheckPassed, setEnvCheckPassed] = useState(true);
   
@@ -316,6 +341,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Router>
+            <PWARedirect />
             <Routes>
             {/* 利用者用アプリ（ルート表示） */}
             <Route path="/user" element={
