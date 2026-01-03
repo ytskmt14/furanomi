@@ -34,18 +34,18 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({
 }) => {
   return (
     <button
-      aria-label="お気に入り"
+      aria-label={isFavorite ? 'お気に入りを解除' : 'お気に入りに追加'}
       onClick={onClick}
       disabled={isLoading}
-      className={`rounded-full p-1 sm:p-1.5 text-sm transition-colors flex items-center justify-center touch-manipulation ${
+      className={`rounded-full p-2 sm:p-1.5 text-sm transition-colors flex items-center justify-center touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 ${
         isFavorite
-          ? 'text-yellow-600'
-          : 'text-gray-600 hover:text-gray-800'
-      }`}
+          ? 'text-yellow-600 active:text-yellow-700'
+          : 'text-gray-600 hover:text-gray-800 active:text-gray-900'
+      } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <Star
         strokeWidth={2}
-        className="w-[18px] h-[18px] sm:w-5 sm:h-5 inline-block"
+        className="w-5 h-5 sm:w-[18px] sm:h-[18px] md:w-5 md:h-5 inline-block"
         {...(isFavorite
           ? { fill: 'currentColor' }
           : { fill: 'none' })}

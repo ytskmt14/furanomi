@@ -95,17 +95,17 @@ export const FavoriteShopCard: React.FC<FavoriteShopCardProps> = ({
                     }
                   }}
                   disabled={isClosed}
-                  className={`flex-shrink-0 p-1.5 sm:p-2 rounded-lg transition-colors touch-manipulation ${
+                  className={`flex-shrink-0 p-2 sm:p-2.5 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center ${
                     isClosed
                       ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-blue-600 hover:bg-blue-50 active:bg-blue-100'
+                      : 'text-blue-600 hover:bg-blue-50 active:bg-blue-100 active:scale-95'
                   }`}
                   aria-label={isClosed ? '営業時間外' : '予約する'}
                 >
                   {isClosed ? (
-                    <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Clock className="w-5 h-5 sm:w-5 sm:h-5" />
                   ) : (
-                    <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <CalendarDays className="w-5 h-5 sm:w-5 sm:h-5" />
                   )}
                 </button>
               )}

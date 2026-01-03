@@ -89,18 +89,18 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <h2 className="text-xl font-semibold text-gray-900 inline-flex items-center gap-2">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 animate-in fade-in-0 duration-200">
+      <Card className="w-full max-w-md max-h-[90vh] sm:max-h-[80vh] overflow-y-auto animate-in zoom-in-95 duration-200 shadow-2xl">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 sm:pb-4 sticky top-0 bg-white z-10 border-b">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 inline-flex items-center gap-2">
             <SearchIcon className="w-5 h-5" /> 店舗を検索
           </h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-            <X className="w-4 h-4" />
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-9 w-9 sm:h-10 sm:w-10 p-0 touch-manipulation" aria-label="閉じる">
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
         </CardHeader>
         
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
           {/* 店舗名検索 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -111,7 +111,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="店舗名を入力..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent touch-manipulation"
             />
           </div>
 
@@ -125,14 +125,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 <button
                   key={category.value}
                   onClick={() => toggleCategory(category.value)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  className={`px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-colors duration-200 touch-manipulation min-h-[44px] ${
                     selectedCategories.includes(category.value)
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <category.Icon className="w-4 h-4" /> {category.label}
+                  <span className="inline-flex items-center gap-1.5 sm:gap-2">
+                    <category.Icon className="w-4 h-4 sm:w-4 sm:h-4" /> {category.label}
                   </span>
                 </button>
               ))}
@@ -149,14 +149,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                 <button
                   key={option.value}
                   onClick={() => toggleAvailability(option.value)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  className={`px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-colors duration-200 touch-manipulation min-h-[44px] ${
                     selectedAvailability.includes(option.value)
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                   }`}
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <option.Icon className={`w-4 h-4 ${option.color}`} /> {option.label}
+                  <span className="inline-flex items-center gap-1.5 sm:gap-2">
+                    <option.Icon className={`w-4 h-4 sm:w-4 sm:h-4 ${option.color}`} /> {option.label}
                   </span>
                 </button>
               ))}
@@ -165,11 +165,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
 
           {/* アクションボタン */}
-          <div className="flex gap-3 pt-4">
-            <Button onClick={handleClearFilters} variant="outline" className="flex-1">
+          <div className="flex gap-3 pt-2 sm:pt-4">
+            <Button onClick={handleClearFilters} variant="outline" className="flex-1 h-11 sm:h-10 text-base sm:text-sm font-medium touch-manipulation">
               クリア
             </Button>
-            <Button onClick={handleSearch} className="flex-1">
+            <Button onClick={handleSearch} className="flex-1 h-11 sm:h-10 text-base sm:text-sm font-medium touch-manipulation">
               検索
             </Button>
           </div>

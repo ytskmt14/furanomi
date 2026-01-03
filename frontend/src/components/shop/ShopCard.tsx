@@ -61,10 +61,10 @@ export const ShopCard: React.FC<ShopCardProps> = ({
 
   return (
     <Card
-      className={`relative group mx-1 my-2 overflow-hidden bg-white border-0 shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 ${
+      className={`relative group mx-0 sm:mx-1 my-2 overflow-hidden bg-white border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] sm:shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 ${
         isClosed
           ? 'cursor-not-allowed'
-          : 'hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:-translate-y-1'
+          : 'hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] sm:hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] active:scale-[0.98] sm:hover:-translate-y-1'
       }`}
     >
       {/* 営業時間外オーバーレイ */}
@@ -78,7 +78,7 @@ export const ShopCard: React.FC<ShopCardProps> = ({
       )}
 
       {/* 店舗画像 */}
-      <div className="relative h-64 w-full overflow-hidden bg-gray-50">
+      <div className="relative h-48 sm:h-56 md:h-64 w-full overflow-hidden bg-gray-50">
         <LazyImage
           src={
             shop.image_url ||
@@ -102,32 +102,36 @@ export const ShopCard: React.FC<ShopCardProps> = ({
       </div>
 
       {/* 店舗基本情報 */}
-      <CardContent className="p-6">
-        <div className="space-y-4">
+      <CardContent className="p-4 sm:p-5 md:p-6">
+        <div className="space-y-3 sm:space-y-4">
           {/* 店舗名行（右側にお気に入りトグル）とカテゴリ */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-xl font-semibold text-gray-900 leading-tight truncate">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 leading-tight truncate flex-1 min-w-0">
                 {shop.name}
               </h3>
               {isAuthenticated && (
-                <FavoriteButton
-                  isFavorite={isFavorite}
-                  isLoading={isLoading}
-                  onClick={(e) => onToggleFavorite(e, shop.id)}
-                />
+                <div className="flex-shrink-0">
+                  <FavoriteButton
+                    isFavorite={isFavorite}
+                    isLoading={isLoading}
+                    onClick={(e) => onToggleFavorite(e, shop.id)}
+                  />
+                </div>
               )}
             </div>
           </div>
 
           {/* 住所 + 地図アイコン（横並び） */}
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span className="truncate">{shop.address}</span>
-            <AddressWithMapLink
-              address={shop.address}
-              latitude={shop.latitude}
-              longitude={shop.longitude}
-            />
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+            <span className="truncate flex-1 min-w-0">{shop.address}</span>
+            <div className="flex-shrink-0">
+              <AddressWithMapLink
+                address={shop.address}
+                latitude={shop.latitude}
+                longitude={shop.longitude}
+              />
+            </div>
           </div>
 
           {/* カテゴリ */}

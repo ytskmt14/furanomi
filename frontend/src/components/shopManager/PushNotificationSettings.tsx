@@ -4,13 +4,6 @@ import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { apiService } from '../../services/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
-
-interface SubscriptionData {
-  endpoint: string;
-  p256dh: string;
-  auth: string;
-}
 
 export const PushNotificationSettings: React.FC = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -62,54 +55,94 @@ export const PushNotificationSettings: React.FC = () => {
         throw new Error('Service Workerがサポートされていません');
       }
 
+      // 通知許可の状態を確認
+      if ('Notification' in window) {
+        const permission = Notification.permission;
+        if (permission === 'denied') {
+          throw new Error('通知が拒否されています。ブラウザの設定から通知を許可してください。\n\n設定方法:\n1. ブラウザの設定を開く\n2. サイトの設定またはプライバシー設定を開く\n3. 通知の設定でこのサイトを許可\n4. ページをリロードして再度お試しください');
+        }
+        if (permission === 'default') {
+          // 通知許可をリクエスト
+          const result = await Notification.requestPermission();
+          if (result === 'denied') {
+            throw new Error('通知の許可が必要です。ブラウザの設定から通知を許可してください。');
+          }
+          if (result === 'default') {
+            throw new Error('通知の許可が必要です。ブラウザの設定から通知を許可してください。');
+          }
+        }
+      }
+
+      // Service Workerの登録を確認
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        // Service Workerを登録
+        try {
+          registration = await navigator.serviceWorker.register('/sw.js');
+          // 登録後にreadyになるまで待つ
+          registration = await navigator.serviceWorker.ready;
+        } catch (swError: any) {
+          console.error('Service Worker registration error:', swError);
+          if (swError.message && swError.message.includes('permission')) {
+            throw new Error('Service Workerの登録に失敗しました。ブラウザの設定を確認してください。');
+          }
+          throw new Error('Service Workerが登録されていません。ページをリロードしてください。');
+        }
+      }
+
+      // Service Workerがreadyになるまで待つ
+      registration = await navigator.serviceWorker.ready;
+      if (!registration) {
+        throw new Error('Service Workerが準備できていません。ページをリロードしてください。');
+      }
+
       // VAPID公開鍵を取得
-      const publicKeyResponse = await fetch(`${API_BASE_URL}/notifications/vapid-public-key`);
-      if (!publicKeyResponse.ok) {
+      let publicKey: string;
+      try {
+        const response = await apiService.getShopManagerVapidPublicKey();
+        publicKey = response.publicKey;
+      } catch (error: any) {
+        if (error.status === 503) {
+          throw new Error('VAPID公開鍵が設定されていません。システム管理者にご連絡ください。');
+        }
         throw new Error('VAPID公開鍵の取得に失敗しました');
       }
-      const { publicKey } = await publicKeyResponse.json();
 
       if (!publicKey) {
-        throw new Error('VAPID公開鍵が設定されていません');
-      }
-
-      // プッシュ通知の購読
-      const registration = await navigator.serviceWorker.ready;
-      if (!registration) {
-        throw new Error('Service Workerが登録されていません。ページをリロードしてください。');
+        throw new Error('VAPID公開鍵が設定されていません。システム管理者にご連絡ください。');
       }
 
       // 既存の購読を確認
       let subscription = await registration.pushManager.getSubscription();
       if (!subscription) {
         // 新しい購読を作成
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: publicKey
-        });
+        try {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: publicKey
+          });
+        } catch (subscribeError: any) {
+          console.error('Push subscription error:', subscribeError);
+          if (subscribeError.name === 'NotAllowedError' || subscribeError.message?.includes('permission')) {
+            throw new Error('通知の許可が必要です。ブラウザの設定から通知を許可してください。\n\n設定方法:\n1. ブラウザの設定を開く\n2. サイトの設定またはプライバシー設定を開く\n3. 通知の設定でこのサイトを許可\n4. ページをリロードして再度お試しください');
+          }
+          if (subscribeError.name === 'NotSupportedError') {
+            throw new Error('プッシュ通知がサポートされていません。HTTPS接続が必要な場合があります。');
+          }
+          throw new Error(`購読に失敗しました: ${subscribeError.message || subscribeError.name || '不明なエラー'}`);
+        }
       }
 
       // バックエンドに購読情報を送信
-      const subscriptionData: SubscriptionData = {
+      const subscriptionData = {
         endpoint: subscription.endpoint,
-        p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
-        auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
+        keys: {
+          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
+          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
+        }
       };
 
-      const response = await fetch(`${API_BASE_URL}/notifications/subscribe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          credentials: 'include'
-        },
-        credentials: 'include',
-        body: JSON.stringify(subscriptionData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || '購読情報の保存に失敗しました');
-      }
+      await apiService.subscribeShopManagerPush(subscriptionData);
 
       setIsSubscribed(true);
       toast({
@@ -123,9 +156,11 @@ export const PushNotificationSettings: React.FC = () => {
       if (error.message) {
         errorMessage = error.message;
       } else if (error.name === 'NotAllowedError') {
-        errorMessage = '通知の許可が必要です。ブラウザの設定を確認してください。';
+        errorMessage = '通知の許可が必要です。ブラウザの設定から通知を許可してください。';
       } else if (error.name === 'NotSupportedError') {
         errorMessage = 'プッシュ通知がサポートされていません。';
+      } else if (error.message?.includes('permission denied') || error.message?.includes('permission')) {
+        errorMessage = '通知の許可が必要です。ブラウザの設定から通知を許可してください。\n\n設定方法:\n1. ブラウザの設定を開く\n2. サイトの設定またはプライバシー設定を開く\n3. 通知の設定でこのサイトを許可\n4. ページをリロードして再度お試しください';
       }
       
       toast({
@@ -152,17 +187,7 @@ export const PushNotificationSettings: React.FC = () => {
       }
 
       // バックエンドから購読情報を削除
-      const response = await fetch(`${API_BASE_URL}/notifications/unsubscribe`, {
-        method: 'POST',
-        headers: {
-          credentials: 'include'
-        },
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to unsubscribe');
-      }
+      await apiService.unsubscribeShopManagerPush();
 
       setIsSubscribed(false);
       toast({

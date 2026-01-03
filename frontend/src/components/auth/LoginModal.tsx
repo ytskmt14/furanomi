@@ -43,21 +43,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">ログイン</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 animate-in fade-in-0 duration-200">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 animate-in zoom-in-95 duration-200">
+        <div className="flex justify-between items-center mb-4 sm:mb-5 p-4 sm:p-6 pb-0">
+          <h2 className="text-lg sm:text-xl font-bold">ログイン</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label="閉じる"
           >
-            ✕
+            <span className="text-xl sm:text-2xl">✕</span>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 p-4 sm:p-6 pt-0">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
+            <label htmlFor="email" className="block text-sm font-medium mb-1.5 sm:mb-2">
               メールアドレス
             </label>
             <input
@@ -66,13 +67,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
               disabled={isLoading}
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
+            <label htmlFor="password" className="block text-sm font-medium mb-1.5 sm:mb-2">
               パスワード
             </label>
             <input
@@ -81,16 +82,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
               disabled={isLoading}
             />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 sm:gap-3 pt-2">
             <Button
               type="submit"
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 h-11 sm:h-10 text-base sm:text-sm font-medium touch-manipulation"
             >
               {isLoading ? 'ログイン中...' : 'ログイン'}
             </Button>
@@ -99,14 +100,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
+              className="h-11 sm:h-10 px-4 sm:px-6 text-base sm:text-sm font-medium touch-manipulation"
             >
               キャンセル
             </Button>
           </div>
 
           {onSwitchToRegister && (
-            <div className="mt-4 text-center">
-              <p className="text-sm text-gray-600">
+            <div className="mt-4 sm:mt-5 text-center px-4 sm:px-6 pb-4 sm:pb-6">
+              <p className="text-xs sm:text-sm text-gray-600">
                 アカウントをお持ちでない方は{' '}
                 <button
                   type="button"
@@ -114,7 +116,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSwitc
                     onClose();
                     onSwitchToRegister();
                   }}
-                  className="text-blue-600 hover:text-blue-700 underline"
+                  className="text-blue-600 hover:text-blue-700 underline touch-manipulation min-h-[44px] inline-flex items-center"
                 >
                   新規登録
                 </button>

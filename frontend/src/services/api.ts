@@ -133,17 +133,19 @@ class ApiService {
   }
 
   // 位置情報ベース店舗検索
+  // 注意: radiusを指定しない場合、バックエンドのシステム設定（search_radius）が使用されます
   async searchShopsByLocation(lat: number, lng: number, options?: {
     category?: string;
     status?: string;
-    radius?: number; // km単位
+    radius?: number; // km単位（指定しない場合はシステム設定を使用）
   }): Promise<{ shops: any[]; total: number; message: string }> {
     return this.getShops({
       lat,
       lng,
       category: options?.category,
       status: options?.status,
-      radius: options?.radius || 10 // デフォルト10km
+      // radiusを明示的に指定した場合のみ渡す（未指定の場合はバックエンドのシステム設定を使用）
+      ...(options?.radius !== undefined && { radius: options.radius })
     });
   }
 
@@ -466,6 +468,24 @@ class ApiService {
 
   async unsubscribeUserPush(): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/user/notifications/unsubscribe`, {
+      method: 'POST',
+    });
+  }
+
+  // --- 店舗管理者向けPush購読 ---
+  async getShopManagerVapidPublicKey(): Promise<{ publicKey: string }> {
+    return this.request<{ publicKey: string }>(`/notifications/vapid-public-key`);
+  }
+
+  async subscribeShopManagerPush(data: { endpoint: string; keys: { p256dh: string; auth: string } }): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/notifications/subscribe`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async unsubscribeShopManagerPush(): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/notifications/unsubscribe`, {
       method: 'POST',
     });
   }

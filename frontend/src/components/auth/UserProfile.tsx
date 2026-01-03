@@ -99,10 +99,11 @@ export const UserProfile: React.FC = () => {
           if (userLocation) {
             try {
               // 位置情報ベースで店舗を検索して距離情報を取得
+              // radiusを指定しない場合、システム設定の検索範囲が使用されます
               const response = await apiService.searchShopsByLocation(
                 userLocation.lat,
-                userLocation.lng,
-                { radius: 50 } // 50km以内の店舗を取得
+                userLocation.lng
+                // radiusを指定しないため、システム設定の検索範囲が使用される
               );
               
               // 距離情報を含む店舗マップを作成
@@ -173,31 +174,31 @@ export const UserProfile: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-3 sm:p-4 md:p-6">
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6 space-y-4">
-        <h2 className="text-lg sm:text-xl font-semibold mb-4 inline-flex items-center gap-2">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6 space-y-4 sm:space-y-5">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-5 inline-flex items-center gap-2">
           <UserIcon className="w-5 h-5" /> マイプロフィール
         </h2>
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">
+          <label className="block text-sm font-medium text-gray-600 mb-1.5 sm:mb-2">
             メールアドレス
           </label>
-          <p className="text-gray-900">{user.email}</p>
+          <p className="text-sm sm:text-base text-gray-900 break-all">{user.email}</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">
+          <label className="block text-sm font-medium text-gray-600 mb-1.5 sm:mb-2">
             ニックネーム
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 sm:py-2 text-base sm:text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
             placeholder="ニックネーム"
           />
         </div>
 
-        <div className="pt-2">
+        <div className="pt-2 sm:pt-3">
           <Button
             onClick={async () => {
               if (saving) return;
@@ -212,7 +213,7 @@ export const UserProfile: React.FC = () => {
               }
             }}
             disabled={saving || name.trim().length === 0}
-            className="w-full"
+            className="w-full h-11 sm:h-10 text-base sm:text-sm font-medium touch-manipulation"
           >
             {saving ? '保存中...' : '保存する'}
           </Button>

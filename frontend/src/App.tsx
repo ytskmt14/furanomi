@@ -193,28 +193,28 @@ const UserApp: React.FC = () => {
   return (
     <Layout userLocation={userLocation}>
         <div className="w-full">
-        <div className="flex justify-center gap-2 mb-4 sm:mb-6 md:mb-8">
+        <div className="flex justify-center gap-2 sm:gap-3 mb-4 sm:mb-6 md:mb-8">
           <Button
             variant={viewMode === 'list' ? 'default' : 'outline'}
             onClick={() => setViewMode('list')}
-            className={`px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 flex-1 sm:flex-initial ${
+            className={`px-4 sm:px-5 md:px-6 py-2.5 sm:py-2.5 md:py-3 text-sm sm:text-sm font-medium rounded-lg transition-all duration-200 flex-1 sm:flex-initial min-h-[44px] touch-manipulation ${
               viewMode === 'list' 
-                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' 
-                : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm'
+                ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm' 
+                : 'bg-white border border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-gray-700 shadow-sm'
             }`}
           >
-            <span className="inline-flex items-center gap-1 sm:gap-2"><List className="w-4 h-4" /> リスト</span>
+            <span className="inline-flex items-center gap-1.5 sm:gap-2"><List className="w-4 h-4 sm:w-5 sm:h-5" /> <span className="hidden xs:inline">リスト</span><span className="xs:hidden">一覧</span></span>
           </Button>
           <Button
             variant={viewMode === 'map' ? 'default' : 'outline'}
             onClick={() => setViewMode('map')}
-            className={`px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 flex-1 sm:flex-initial ${
+            className={`px-4 sm:px-5 md:px-6 py-2.5 sm:py-2.5 md:py-3 text-sm sm:text-sm font-medium rounded-lg transition-all duration-200 flex-1 sm:flex-initial min-h-[44px] touch-manipulation ${
               viewMode === 'map' 
-                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' 
-                : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm'
+                ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm' 
+                : 'bg-white border border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-gray-700 shadow-sm'
             }`}
           >
-            <span className="inline-flex items-center gap-1 sm:gap-2"><Map className="w-4 h-4" /> 地図</span>
+            <span className="inline-flex items-center gap-1.5 sm:gap-2"><Map className="w-4 h-4 sm:w-5 sm:h-5" /> 地図</span>
           </Button>
         </div>
 
