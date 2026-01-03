@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, lazy, useCallback, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
@@ -278,28 +278,44 @@ const checkEnvironmentVariables = () => {
 };
 
 // PWA起動時のリダイレクト処理コンポーネント
-const PWARedirect: React.FC = () => {
-  const location = useLocation();
+const PWARootRedirect: React.FC = () => {
+  // PWAとして起動した場合（standaloneモード）かつルート（/）にアクセスした場合
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                       (window.navigator as any).standalone === true;
   
-  useEffect(() => {
-    // PWAとして起動した場合（standaloneモード）かつルート（/）にアクセスした場合
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                         (window.navigator as any).standalone === true;
+  if (isStandalone) {
+    // インストール時に記録されたURLパスを取得（タイムスタンプ付き）
+    const installPathData = localStorage.getItem('pwa-install-path');
     
-    if (isStandalone && location.pathname === '/') {
-      // インストール時に記録されたURLパスを取得
-      const installPath = localStorage.getItem('pwa-install-path');
-      
-      if (installPath && installPath !== '/') {
-        console.log('[PWA] Redirecting to installation path:', installPath);
-        // 記録されたパスにリダイレクト（React Routerを使用）
-        window.location.replace(installPath);
-        return;
+    if (installPathData) {
+      try {
+        const { path, timestamp } = JSON.parse(installPathData);
+        if (path && path !== '/') {
+          // 24時間以内のパスのみ有効
+          const now = Date.now();
+          const twentyFourHours = 24 * 60 * 60 * 1000;
+          
+          if (now - timestamp < twentyFourHours) {
+            console.log('[PWA] Redirecting to installation path:', path);
+            return <Navigate to={path} replace />;
+          } else {
+            // 24時間以上経過している場合は削除
+            localStorage.removeItem('pwa-install-path');
+          }
+        }
+      } catch (e) {
+        // 古い形式（文字列のみ）の場合は、そのまま使用
+        const oldPath = installPathData;
+        if (oldPath && oldPath !== '/') {
+          console.log('[PWA] Redirecting to installation path (legacy format):', oldPath);
+          return <Navigate to={oldPath} replace />;
+        }
       }
     }
-  }, [location.pathname]);
+  }
   
-  return null;
+  // デフォルトは利用者用アプリ
+  return <Navigate to="/user" replace />;
 };
 
 function App() {
@@ -310,18 +326,22 @@ function App() {
     setEnvCheckPassed(envValid);
   }, []);
 
-  // iOS向け: 通常のブラウザモードでページが読み込まれた時、URLパスを保存
+  // iOS向け: 通常のブラウザモードでページが読み込まれた時、URLパスを保存（タイムスタンプ付き）
   // （iOSではbeforeinstallprompt/appinstalledイベントが発火しないため）
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                          (window.navigator as any).standalone === true;
     
-    // iOSかつ通常のブラウザモードの場合、URLパスを保存
+    // iOSかつ通常のブラウザモードの場合、URLパスをタイムスタンプ付きで保存
     if (isIOS && !isStandalone) {
       const currentPath = window.location.pathname;
-      localStorage.setItem('pwa-install-path', currentPath);
-      console.log('[PWA] iOS: Current path saved:', currentPath);
+      const pathData = {
+        path: currentPath,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('pwa-install-path', JSON.stringify(pathData));
+      console.log('[PWA] iOS: Current path saved with timestamp:', currentPath);
     }
   }, []);
 
@@ -356,7 +376,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Router>
-            <PWARedirect />
             <Routes>
             {/* 利用者用アプリ（ルート表示） */}
             <Route path="/user" element={
@@ -419,8 +438,8 @@ function App() {
               </Suspense>
             } />
             
-            {/* デフォルトは利用者用アプリ */}
-            <Route path="/" element={<Navigate to="/user" replace />} />
+            {/* デフォルトは利用者用アプリ（PWA起動時は保存されたパスにリダイレクト） */}
+            <Route path="/" element={<PWARootRedirect />} />
             </Routes>
             <Toaster />
             <OfflineIndicator />

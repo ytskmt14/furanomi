@@ -24,11 +24,15 @@ export const PWAInstallPrompt: React.FC = () => {
       return;
     }
 
-    // iOS向け: 通常のブラウザモードでページが読み込まれた時、URLパスを保存
+    // iOS向け: 通常のブラウザモードでページが読み込まれた時、URLパスを保存（タイムスタンプ付き）
     // （iOSではbeforeinstallprompt/appinstalledイベントが発火しないため）
     if (isIOS) {
       const currentPath = window.location.pathname;
-      localStorage.setItem('pwa-install-path', currentPath);
+      const pathData = {
+        path: currentPath,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('pwa-install-path', JSON.stringify(pathData));
       console.log('[PWA] iOS: Current path saved for potential installation:', currentPath);
     }
 
@@ -44,9 +48,13 @@ export const PWAInstallPrompt: React.FC = () => {
 
       // appinstalledイベント（インストール完了時に発火）
       const handleAppInstalled = () => {
-        // インストール時のURLパスを保存
+        // インストール時のURLパスを保存（タイムスタンプ付き）
         const currentPath = window.location.pathname;
-        localStorage.setItem('pwa-install-path', currentPath);
+        const pathData = {
+          path: currentPath,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('pwa-install-path', JSON.stringify(pathData));
         console.log('[PWA] Installation path saved:', currentPath);
         setIsInstalled(true);
         setShowPrompt(false);
@@ -80,7 +88,11 @@ export const PWAInstallPrompt: React.FC = () => {
       // iOSの場合は手順を表示
       // この時点でURLパスを保存（ユーザーがインストール手順を見ている時点）
       const currentPath = window.location.pathname;
-      localStorage.setItem('pwa-install-path', currentPath);
+      const pathData = {
+        path: currentPath,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('pwa-install-path', JSON.stringify(pathData));
       console.log('[PWA] iOS: Path saved when showing instructions:', currentPath);
       setShowIOSInstructions(true);
       return;
@@ -88,9 +100,13 @@ export const PWAInstallPrompt: React.FC = () => {
 
     if (!deferredPrompt) return;
 
-    // インストール時のURLパスを事前に保存
+    // インストール時のURLパスを事前に保存（タイムスタンプ付き）
     const currentPath = window.location.pathname;
-    localStorage.setItem('pwa-install-path', currentPath);
+    const pathData = {
+      path: currentPath,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('pwa-install-path', JSON.stringify(pathData));
     console.log('[PWA] Installation path saved before prompt:', currentPath);
 
     deferredPrompt.prompt();
