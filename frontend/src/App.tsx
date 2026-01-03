@@ -348,9 +348,9 @@ function App() {
     
     if (installPathData) {
       try {
-        const { path, timestamp } = JSON.parse(installPathData);
-        console.log('[PWA] App component - parsed path:', path, 'timestamp:', timestamp);
-        
+        const { path, timestamp, confirmed } = JSON.parse(installPathData);
+        console.log('[PWA] App component - parsed path:', path, 'timestamp:', timestamp, 'confirmed:', confirmed);
+
         if (path && path !== '/') {
           // 24時間以内のパスのみ有効
           const now = Date.now();
