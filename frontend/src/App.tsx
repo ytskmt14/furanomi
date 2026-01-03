@@ -247,9 +247,6 @@ const UserApp: React.FC = () => {
         />
 
         <FloatingSearchButton onClick={handleSearchOpen} />
-        
-        {/* PWAインストールプロンプト（利用者アプリのみ） */}
-        <PWAInstallPrompt />
       </div>
     </Layout>
   );
@@ -490,6 +487,10 @@ function App() {
             {/* デフォルトは利用者用アプリ（PWA起動時は保存されたパスにリダイレクト） */}
             <Route path="/" element={<PWARootRedirect />} />
             </Routes>
+
+            {/* PWAインストールプロンプト（全ページで表示） */}
+            <PWAInstallPrompt />
+
             <Toaster />
             <OfflineIndicator />
             <AppBadgeManager />
