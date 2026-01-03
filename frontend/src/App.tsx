@@ -279,12 +279,63 @@ const checkEnvironmentVariables = () => {
 
 // PWA起動時のリダイレクト処理コンポーネント
 const PWARootRedirect: React.FC = () => {
+  useEffect(() => {
+    // PWAとして起動した場合（standaloneモード）かつルート（/）にアクセスした場合
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                         (window.navigator as any).standalone === true;
+    
+    // document.referrerが空（PWA起動時）またはreferrerが同じオリジンでない場合
+    const isPWALaunch = !document.referrer || !document.referrer.startsWith(window.location.origin);
+    
+    if (isStandalone && isPWALaunch) {
+      // インストール時に記録されたURLパスを取得（タイムスタンプ付き）
+      const installPathData = localStorage.getItem('pwa-install-path');
+      
+      if (installPathData) {
+        try {
+          const { path, timestamp } = JSON.parse(installPathData);
+          if (path && path !== '/') {
+            // 24時間以内のパスのみ有効
+            const now = Date.now();
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+            
+            if (now - timestamp < twentyFourHours) {
+              console.log('[PWA] Redirecting to installation path:', path);
+              // window.location.replace()を使用してリダイレクト（React Routerの外で実行）
+              window.location.replace(path);
+              return;
+            } else {
+              // 24時間以上経過している場合は削除
+              localStorage.removeItem('pwa-install-path');
+            }
+          }
+        } catch (e) {
+          // 古い形式（文字列のみ）の場合は、そのまま使用
+          const oldPath = installPathData;
+          if (oldPath && oldPath !== '/') {
+            console.log('[PWA] Redirecting to installation path (legacy format):', oldPath);
+            window.location.replace(oldPath);
+            return;
+          }
+        }
+      }
+    }
+  }, []);
+  
+  // デフォルトは利用者用アプリ（リダイレクトしない場合）
+  return <Navigate to="/user" replace />;
+};
+
+function App() {
+  const [envCheckPassed, setEnvCheckPassed] = useState(true);
+  
+  // PWA起動時のリダイレクト処理（Routerの前に実行）
   // PWAとして起動した場合（standaloneモード）かつルート（/）にアクセスした場合
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                        (window.navigator as any).standalone === true;
+  const isPWALaunch = !document.referrer || !document.referrer.startsWith(window.location.origin);
   
-  if (isStandalone) {
-    // インストール時に記録されたURLパスを取得（タイムスタンプ付き）
+  if (isStandalone && isPWALaunch && window.location.pathname === '/') {
     const installPathData = localStorage.getItem('pwa-install-path');
     
     if (installPathData) {
@@ -297,7 +348,10 @@ const PWARootRedirect: React.FC = () => {
           
           if (now - timestamp < twentyFourHours) {
             console.log('[PWA] Redirecting to installation path:', path);
-            return <Navigate to={path} replace />;
+            // window.location.replace()を使用してリダイレクト（React Routerの外で実行）
+            window.location.replace(path);
+            // リダイレクト中は何も表示しない
+            return null;
           } else {
             // 24時間以上経過している場合は削除
             localStorage.removeItem('pwa-install-path');
@@ -308,18 +362,13 @@ const PWARootRedirect: React.FC = () => {
         const oldPath = installPathData;
         if (oldPath && oldPath !== '/') {
           console.log('[PWA] Redirecting to installation path (legacy format):', oldPath);
-          return <Navigate to={oldPath} replace />;
+          window.location.replace(oldPath);
+          // リダイレクト中は何も表示しない
+          return null;
         }
       }
     }
   }
-  
-  // デフォルトは利用者用アプリ
-  return <Navigate to="/user" replace />;
-};
-
-function App() {
-  const [envCheckPassed, setEnvCheckPassed] = useState(true);
   
   useEffect(() => {
     const envValid = checkEnvironmentVariables();
