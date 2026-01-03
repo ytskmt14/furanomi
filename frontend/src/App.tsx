@@ -334,19 +334,32 @@ function App() {
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                        (window.navigator as any).standalone === true;
   const isPWALaunch = !document.referrer || !document.referrer.startsWith(window.location.origin);
+  const currentPath = window.location.pathname;
   
-  if (isStandalone && isPWALaunch && window.location.pathname === '/') {
+  // デバッグ用ログ
+  console.log('[PWA] App component - isStandalone:', isStandalone);
+  console.log('[PWA] App component - isPWALaunch:', isPWALaunch);
+  console.log('[PWA] App component - currentPath:', currentPath);
+  console.log('[PWA] App component - document.referrer:', document.referrer);
+  
+  if (isStandalone && isPWALaunch && currentPath === '/') {
     const installPathData = localStorage.getItem('pwa-install-path');
+    console.log('[PWA] App component - installPathData:', installPathData);
     
     if (installPathData) {
       try {
         const { path, timestamp } = JSON.parse(installPathData);
+        console.log('[PWA] App component - parsed path:', path, 'timestamp:', timestamp);
+        
         if (path && path !== '/') {
           // 24時間以内のパスのみ有効
           const now = Date.now();
           const twentyFourHours = 24 * 60 * 60 * 1000;
+          const timeDiff = now - timestamp;
           
-          if (now - timestamp < twentyFourHours) {
+          console.log('[PWA] App component - timeDiff (hours):', timeDiff / (60 * 60 * 1000));
+          
+          if (timeDiff < twentyFourHours) {
             console.log('[PWA] Redirecting to installation path:', path);
             // window.location.replace()を使用してリダイレクト（React Routerの外で実行）
             window.location.replace(path);
@@ -354,11 +367,13 @@ function App() {
             return null;
           } else {
             // 24時間以上経過している場合は削除
+            console.log('[PWA] Installation path expired, removing from localStorage');
             localStorage.removeItem('pwa-install-path');
           }
         }
       } catch (e) {
         // 古い形式（文字列のみ）の場合は、そのまま使用
+        console.log('[PWA] App component - legacy format detected:', installPathData);
         const oldPath = installPathData;
         if (oldPath && oldPath !== '/') {
           console.log('[PWA] Redirecting to installation path (legacy format):', oldPath);
@@ -367,7 +382,11 @@ function App() {
           return null;
         }
       }
+    } else {
+      console.log('[PWA] No installation path data found in localStorage');
     }
+  } else {
+    console.log('[PWA] Not redirecting - isStandalone:', isStandalone, 'isPWALaunch:', isPWALaunch, 'currentPath:', currentPath);
   }
   
   useEffect(() => {
